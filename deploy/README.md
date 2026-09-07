@@ -9,7 +9,7 @@ network/VPN; this deployment is not an Internet-facing HTTPS service.
 
 Initialize as roomhacker before starting the units:
 ```
-/opt/contribution-ledger/contribution init --data /home/roomhacker/.local/share/contribution-ledger
+sudo -u roomhacker -H /opt/contribution-ledger/contribution init --data /home/roomhacker/.local/share/contribution-ledger
 ```
 Install the two unit files under `/etc/systemd/system`, run `systemctl daemon-reload`, start
 web first and verify `/health`, then start worker. Do not run against smoke/test data.

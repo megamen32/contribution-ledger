@@ -63,14 +63,14 @@ export default function Login() {
 
           <label className="block space-y-2 text-sm font-medium">
             Пароль
-            <Input type="password" required minLength={12} maxLength={128} autoComplete={register ? "new-password" : "current-password"} value={password} onChange={event => setPassword(event.target.value)} />
+            <Input type="password" required maxLength={128} autoComplete={register ? "new-password" : "current-password"} value={password} onChange={event => setPassword(event.target.value)} />
           </label>
 
           {register && (
             <>
               <label className="block space-y-2 text-sm font-medium">
                 Ещё раз
-                <Input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={repeat} onChange={event => setRepeat(event.target.value)} />
+                <Input type="password" required maxLength={128} autoComplete="new-password" value={repeat} onChange={event => setRepeat(event.target.value)} />
               </label>
               {!invite && (
                 <label className="block space-y-2 text-sm font-medium">

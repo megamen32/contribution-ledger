@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const body = await req.json().catch(() => ({}))
-  if (!validatePassword(body.password) || !validatePassword(body.oldPassword) || body.password === body.oldPassword) return NextResponse.json({ error: "Новый пароль должен отличаться и содержать не менее 12 символов" }, { status: 422 })
+  if (!validatePassword(body.password) || !validatePassword(body.oldPassword) || body.password === body.oldPassword) return NextResponse.json({ error: "Укажите текущий и новый пароли. Новый пароль должен отличаться от текущего." }, { status: 422 })
   const credential = await db.userCredential.findUnique({ where: { userId: user.id } })
   const verified = credential ? await argon2.verify(credential.passwordHash, body.oldPassword).catch(() => false) : false
   if (!credential || !verified) return NextResponse.json({ error: "Текущий пароль неверен" }, { status: 403 })

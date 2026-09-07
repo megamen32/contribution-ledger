@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const name = typeof body.displayName === "string" ? body.displayName.trim() : ""
   const password = body.password
   const invite = typeof body.invite === "string" ? body.invite.trim() : ""
-  if (!LOGIN_RE.test(login) || !name || name.length > 100 || !validatePassword(password) || !invite) return NextResponse.json({ error: "Проверьте имя, логин, пароль (12+ символов) и приглашение" }, { status: 422 })
+  if (!LOGIN_RE.test(login) || !name || name.length > 100 || !validatePassword(password) || !invite) return NextResponse.json({ error: "Проверьте имя, логин, пароль и приглашение" }, { status: 422 })
   const now = new Date()
   const invitation = await db.inviteToken.findUnique({ where: { tokenHash: tokenHash(invite) } })
   if (!invitation || invitation.usedAt || invitation.expiresAt <= now) return NextResponse.json({ error: "Приглашение недействительно или уже использовано" }, { status: 403 })

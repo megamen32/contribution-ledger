@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import CredentialsProvider from "next-auth/providers/credentials"
 import * as argon2 from "argon2"
 import { db } from "./db"
+import { validatePassword } from "./account"
 
 const authSecret = process.env.NEXTAUTH_SECRET || (process.env.NEXTAUTH_SECRET_FILE ? readFileSync(process.env.NEXTAUTH_SECRET_FILE, "utf8").trim() : "")
 if (!authSecret) throw new Error("NEXTAUTH_SECRET is not configured")
@@ -16,7 +17,7 @@ export const authOptions: NextAuthOptions = {
     async authorize(credentials) {
       const login = credentials?.login?.trim().toLowerCase() ?? ""
       const password = credentials?.password ?? ""
-      if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(login) || password.length < 12 || password.length > 128) return null
+      if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(login) || !validatePassword(password)) return null
       const credential = await db.userCredential.findUnique({ where: { login }, include: { user: true } })
       if (!credential || !credential.user.active) { await argon2.verify("$argon2id$v=19$m=19456,t=2,p=1$YWJjZGVmZ2hpamtsbW5vcA$AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8", password).catch(() => false); return null }
       if (credential.lockedUntil && credential.lockedUntil > new Date()) return null

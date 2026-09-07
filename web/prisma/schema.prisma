@@ -1,0 +1,272 @@
+// Вклад — internal contribution ledger for a small startup team.
+// Adapted from the contribution_program_specification (FastAPI/SQLite)
+// to Prisma + SQLite. Money is stored in minor units (kopecks/cents).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  displayName  String
+  email        String   @unique
+  timezone     String   @default("Europe/Moscow")
+  role         String   @default("member") // member | admin
+  color        String   @default("#64748b") // avatar accent
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  sessions     Session[]
+  tasksOwned   Task[]      @relation("TaskOwner")
+  ledgerEntries LedgerEntry[]
+  agreedRates  AgreedLaborRate[]
+  jobs         Job[]       @relation("JobActor")
+  changes      Change[]
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         String
+  taskId          String?
+  task            Task?    @relation(fields: [taskId], references: [id])
+  status          String   @default("recording") // recording | paused | stopped | pending_upload | uploaded
+  startedAt       DateTime
+  endedAt         DateTime?
+  // intervals_json: [{start:ISO, end:ISO, kind:"work"|"pause"}]
+  intervalsJson   String   @default("[]")
+  confirmedSeconds Int     @default(0)
+  note            String   @default("")
+  revision        Int      @default(1)
+  // Effort-credit mode: true = time × rate (default); false = explicit result_minor cost
+  effortCredit    Boolean  @default(true)
+  resultMinor     Int?     // when effortCredit=false, the agreed cost of the result
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  allocations     TaskAllocation[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Task {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String   @default("")
+  ownerId             String
+  owner               User     @relation("TaskOwner", fields: [ownerId], references: [id])
+  status              String   @default("open") // open | in_progress | needs_report | assessing | done | blocked
+  category            String?  // dev | research | design | ops | learning | sales | org
+  complexity          Int?     // 1..5 descriptive
+  revision            Int      @default(1)
+  currentReportId     String?
+  activeAssessmentId  String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  sessions            Session[]
+  allocations         TaskAllocation[]
+  reportVersions      ReportVersion[]
+  assessmentRounds    AssessmentRound[]
+  ledgerEntries       LedgerEntry[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model TaskAllocation {
+  id           String  @id @default(cuid())
+  taskId       String
+  task         Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sessionId    String?
+  session      Session? @relation(fields: [sessionId], references: [id])
+  userId       String
+  confirmedSeconds Int
+  source       String  @default("measured") // measured | manual | confirmed_split
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+model ReportVersion {
+  id              String   @id @default(cuid())
+  taskId          String
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  version         Int
+  // JSON: {goal, actions[], result, unfinished, constraints, sources[], origins[]}
+  contentJson     String
+  status          String   @default("draft") // draft | approved
+  sourcesManifest String   @default("[]")
+  authorApprovedAt DateTime?
+  createdAt       DateTime @default(now())
+
+  assessmentRounds AssessmentRound[]
+
+  @@index([taskId])
+}
+
+model AssessmentRound {
+  id               String   @id @default(cuid())
+  taskId           String
+  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reportId         String
+  report           ReportVersion @relation(fields: [reportId], references: [id])
+  number           Int
+  // Anonymized packet JSON (validated by BlindPacketSchema; no name/user_id/hours/personal rate/money)
+  packetJson       String
+  packetHash       String
+  rulesVersion     Int      @default(1)
+  rateCardVersion  Int      @default(1)
+  modelProfileId   String?
+  modelConfigHash  String   @default("")
+  status           String   @default("queued") // queued | running | partial | done | failed | cancelled
+  // aggregate JSON: {collectionStatus, priceStatus, costLow, costHigh, hoursLow, hoursHigh,
+  //   category, needsReview, reviewReasons[], perModel[], validCount, totalCount, financialEffectMinor:0}
+  aggregateJson    String   @default("{}")
+  visualReviewRequired Boolean @default(false)
+  simulationMode   Boolean  @default(false) // true when using z-ai personas (not 3 distinct local models)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  judgeRuns        JudgeRun[]
+
+  @@index([taskId])
+}
+
+model JudgeRun {
+  id            String   @id @default(cuid())
+  assessmentId  String
+  assessment    AssessmentRound @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  modelKey      String   // qwen3:8b | gemma3:4b | mistral:7b
+  sampleIndex   Int      // 1..3
+  attempt       Int      @default(1)
+  status        String   @default("queued") // queued | running | done | failed
+  // response JSON: {assessable, workType, qualification, complexity, hoursLow, hoursHigh, rateCardRowId, completeness, evidenceId, rationale, priceLow, priceHigh}
+  responseJson  String   @default("{}")
+  usageJson     String   @default("{}")
+  error         String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([assessmentId, modelKey, sampleIndex])
+  @@index([assessmentId])
+}
+
+model LedgerEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String   // cash_contribution | unreimbursed_expense | labor | bonus | reimbursement | settlement | reversal
+  currency     String   @default("RUB")
+  amountMinor  Int      // signed minor units; positive kinds > 0, settlement/reversal < 0
+  taskId       String?
+  task         Task?    @relation(fields: [taskId], references: [id])
+  sourceId     String   // links to session/report/allocation that produced this
+  status       String   @default("confirmed") // draft | confirmed (confirmed = immutable via trigger)
+  ruleVersion  Int      @default(1)
+  businessKey  String   @unique // idempotency key; same key + same payload = return existing
+  requestHash  String   // canonical digest of the command; conflict detection
+  policyId     String   @default("honest-v1") // rule version reference
+  targetEntryId String? // set for settlement & reversal (replaces reversesId)
+  note         String   @default("")
+  basis        String   @default("") // human-readable basis / formula trace
+  reason       String   @default("") // human reason (distinct from basis)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([targetEntryId])
+  @@index([kind])
+}
+
+model RateCardVersion {
+  id         String   @id @default(cuid())
+  version    Int      @unique
+  // JSON: {rates:[{id, role, qualification, market, currency, priceType, low, high, source, sourceDate, checkedAt}], agreedAt}
+  contentJson String
+  kind       String   @default("market") // market | agreed
+  agreedAt   DateTime @default(now())
+  createdAt  DateTime @default(now())
+}
+
+model AgreedLaborRate {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          String   // e.g. "developer", "researcher", "designer"
+  category      String   // work category
+  currency      String   @default("RUB")
+  ratePerHourMinor Int
+  effectiveFrom DateTime @default(now())
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model RuleVersion {
+  id              String   @id @default(cuid())
+  version         Int      @unique
+  contentJson     String   // {summary, rounding, formulaText, ...}
+  acceptedByJson  String   @default("[]")
+  effectiveFrom   DateTime @default(now())
+  createdAt       DateTime @default(now())
+}
+
+model Job {
+  id            String   @id @default(cuid())
+  kind          String   // summarize | assess | ocr | finalize
+  businessKey   String   @unique
+  payloadJson   String   @default("{}")
+  state         String   @default("queued") // queued | running | retry_wait | done | failed | cancelled
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime?
+  leaseUntil    DateTime?
+  checkpointJson String  @default("{}")
+  lastError     String   @default("")
+  actorId       String?
+  actor         User?    @relation("JobActor", fields: [actorId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([state])
+}
+
+model Change {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id])
+  action      String
+  diffJson    String   @default("{}")
+  timestamp   DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+// Formal 3-model consortium profile (spec §5: 3 distinct families × 3 samples, temp 0.2).
+// In this environment simulationMode=true (z-ai personas); a real Ollama swap sets it false.
+model ModelProfile {
+  id              String   @id @default(cuid())
+  profileId       String   @unique
+  // JSON: [{key, family, tag, digest, runtime_version, quantization}]
+  modelsJson      String
+  // JSON: [int, int, int] — 3 distinct sampling seeds
+  seedsJson       String
+  temperature     Float    @default(0.2)
+  samplesPerModel Int      @default(3)
+  maxOutputTokens Int      @default(1536)
+  simulationMode  Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([active])
+}

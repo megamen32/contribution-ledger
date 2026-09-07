@@ -10,3 +10,11 @@ build/
 *.key
 var/
 .DS_Store
+
+.tmp/
+web/node_modules/
+web/.next/
+web/.env*
+web/prisma/*.db*
+
+web/*.tsbuildinfo

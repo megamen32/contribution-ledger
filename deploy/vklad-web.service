@@ -1,0 +1,26 @@
+[Unit]
+Description=Vklad shared team workspace
+After=network-online.target
+
+[Service]
+Type=simple
+User=roomhacker
+Group=roomhacker
+WorkingDirectory=/home/roomhacker/agents-projects/contribution-ledger/web/.next/standalone
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=8768
+Environment=PUBLIC_ORIGIN=https://vklad.bezrabotnyi.com
+Environment=DATABASE_URL=file:/home/roomhacker/.local/share/vklad/ledger.db
+Environment=OMNIROUTE_BASE_URL=http://127.0.0.1:20128/v1
+Environment=OMNIROUTE_API_KEY_FILE=/home/roomhacker/.local/share/vklad/omniroute.key
+ExecStart=/usr/local/bin/node server.js
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -11,5 +11,6 @@ Effort credit is ON by default: confirmed work × agreed rate, no inactivity pen
 an explicit result value, never an automatic zero or a secretly changed AI valuation.
 Do not change company equity or assign morality/reputation scores.
 Missing capabilities remain visibly unverified. No claim that a mock proves real recording Stop.
-Screenpipe license/subscription is a separate prerequisite; do not bundle proprietary builds.
+Bundle only the MIT Screenpipe fork pinned in macos/screenpipe-source.json; retain license notices.
+Do not bundle ee/ or official proprietary builds, and do not silently update past the MIT boundary.
 Binary delivery: tested builds only, platform-specific. Do not claim a Linux binary is a Mac installer.

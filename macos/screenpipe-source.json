@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/megamen32/screenpipe",
+  "source_ref": "737416b73938fb4d1857cd019363ecf5707a8653",
+  "upstream_base": "892199f742e46d0c5d9e8c06687b35ca7c2b6547",
+  "main_sha256": "0f0128aadec6ee357e70cf9db99d306c7c268295e916fe7e412c91697c4f95f9",
+  "lock_sha256": "5843e4ea4ecd5cbb83ad84fdb05a245fec66fc3aeb80efbcad72996c221ba052",
+  "target": "aarch64-apple-darwin"
+}

@@ -59,6 +59,43 @@ enum ServerAddress {
     private let smokeDirectory: URL?
     private var smokeFinished = false
     private var timeout: Timer?
+    private let recorder = ScreenpipeController()
+    private var recordItem: NSToolbarItem?
+    private var recordingStatusItem: NSStatusItem?
+    private var waitingToQuit = false
+
+    @objc private func toggleRecording() {
+        guard smokeDirectory == nil else { return }
+        if recorder.isActive { recorder.stop(); return }
+        do { try recorder.start() }
+        catch { showAlert("Запись не началась", error.localizedDescription) }
+    }
+    @objc private func stopForSleep() { recorder.stop() }
+    @objc private func openRecordings() {
+        do {
+            try FileManager.default.createDirectory(at: ScreenpipeController.recordings, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            NSWorkspace.shared.open(ScreenpipeController.recordings)
+        } catch { showAlert("Не удалось открыть записи", error.localizedDescription) }
+    }
+    private func updateRecordingUI() {
+        recordItem?.label = recorder.isActive ? "Остановить" : "Начать запись"
+        recordItem?.toolTip = recorder.status
+        recordItem?.image = NSImage(systemSymbolName: recorder.isActive ? "stop.circle" : "record.circle", accessibilityDescription: recorder.status)
+        window?.subtitle = recorder.status
+        if recorder.isActive && recordingStatusItem == nil {
+            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+            item.button?.title = "Вклад · запись"
+            let menu = NSMenu()
+            let stop = NSMenuItem(title: "Остановить запись", action: #selector(toggleRecording), keyEquivalent: "")
+            stop.target = self; menu.addItem(stop); item.menu = menu; recordingStatusItem = item
+        } else if !recorder.isActive, let item = recordingStatusItem {
+            NSStatusBar.system.removeStatusItem(item); recordingStatusItem = nil
+        }
+    }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard recorder.isActive else { return .terminateNow }
+        waitingToQuit = true; recorder.stop(); return .terminateLater
+    }
 
     init(endpoint: URL, smokeDirectory: URL?) {
         self.endpoint = endpoint; self.smokeDirectory = smokeDirectory
@@ -102,7 +139,15 @@ enum ServerAddress {
                 MainActor.assumeIsolated { self?.finishSmoke(false, reason: "Timed out loading the real server") }
             }
         }
+        recorder.onChange = { [weak self] in self?.updateRecordingUI() }
+        recorder.onStopped = { [weak self] in
+            guard let self, self.waitingToQuit else { return }
+            self.waitingToQuit = false; NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(stopForSleep), name: NSWorkspace.willSleepNotification, object: nil)
+        DistributedNotificationCenter.default().addObserver(self, selector: #selector(stopForSleep), name: NSNotification.Name("com.apple.screenIsLocked"), object: nil)
         reloadPage()
+        updateRecordingUI()
     }
     private func installMenus() {
         let menu = NSMenu()
@@ -127,7 +172,7 @@ enum ServerAddress {
         menu.addItem(win); NSApp.windowsMenu = win.submenu; NSApp.mainMenu = menu
     }
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.init("reload"), .init("server"), .flexibleSpace, .init("browser")]
+        return [.init("record"), .init("recordings"), .flexibleSpace, .init("reload"), .init("server"), .init("browser")]
     }
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         return toolbarAllowedItemIdentifiers(toolbar)
@@ -135,17 +180,21 @@ enum ServerAddress {
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         let values: [String: (String, String, Selector)] = [
+            "record": ("Начать запись", "record.circle", #selector(toggleRecording)),
+            "recordings": ("Записи", "folder", #selector(openRecordings)),
             "reload": ("Обновить", "arrow.clockwise", #selector(reloadPage)),
             "server": ("Сервер", "network", #selector(changeServer)),
             "browser": ("В браузере", "safari", #selector(openBrowser))]
         guard let value = values[id.rawValue] else { return nil }
         let item = NSToolbarItem(itemIdentifier: id); item.label = value.0; item.toolTip = value.0
         item.image = NSImage(systemSymbolName: value.1, accessibilityDescription: value.0)
-        item.target = self; item.action = value.2; return item
+        item.target = self; item.action = value.2
+        if id.rawValue == "record" { recordItem = item }
+        return item
     }
     @objc private func reloadPage() {
         failurePanel.isHidden = true; web.isHidden = false
-        window.subtitle = endpoint.absoluteString
+        window.subtitle = recorder.status
         var request = URLRequest(url: endpoint)
         request.timeoutInterval = 20
         web.load(request)
@@ -153,7 +202,7 @@ enum ServerAddress {
     @objc private func openBrowser() { NSWorkspace.shared.open(endpoint) }
     @objc private func changeServer() {
         let alert = NSAlert(); alert.messageText = "Сервер команды"
-        alert.informativeText = "Общая база остаётся на сервере. HTTP разрешён только для локальной сети/VPN; для интернета используйте HTTPS. Приложение не записывает экран."
+        alert.informativeText = "Общая база остаётся на сервере. Записи Screenpipe хранятся на этом Mac и не отправляются автоматически."
         let field = NSTextField(string: endpoint.absoluteString)
         field.frame = NSRect(x: 0, y: 0, width: 460, height: 26)
         alert.accessoryView = field; alert.addButton(withTitle: "Подключиться"); alert.addButton(withTitle: "Отмена")
@@ -263,7 +312,11 @@ enum ServerAddress {
 @main struct Main {
     @MainActor static func main() {
         let args = CommandLine.arguments
-        if args.contains("--self-test") { ServerAddress.selfTest(); return }
+        if args.contains("--self-test") { ServerAddress.selfTest(); ScreenpipeController.selfTest(); return }
+        if args.contains("--capture-check") {
+            let data = try! JSONSerialization.data(withJSONObject: ScreenpipeController.check(), options: [.sortedKeys])
+            print(String(data: data, encoding: .utf8)!); return
+        }
         func value(_ flag: String) -> String? {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
             return args[i + 1]

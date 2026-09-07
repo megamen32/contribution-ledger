@@ -4,7 +4,12 @@ import UniformTypeIdentifiers
 
 // A client, not a second ledger: all team data remains on the configured server.
 enum ServerAddress {
-    static let initial = "http://192.168.2.100:8766"
+    static let initial = "https://vklad.bezrabotnyi.com"
+    static func allowsNavigation(_ url: URL, server: URL) -> Bool {
+        sameOrigin(url, server) || (server.host == "vklad.bezrabotnyi.com" && server.scheme == "https"
+            && url.scheme == "https" && url.host == "auth.bezrabotnyi.com"
+            && (url.port == nil || url.port == 443) && url.user == nil && url.password == nil)
+    }
     static func parse(_ input: String) -> URL? {
         guard var c = URLComponents(string: input.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = c.scheme?.lowercased(), ["http", "https"].contains(scheme),
@@ -44,7 +49,11 @@ enum ServerAddress {
         precondition(sameOrigin(URL(string: "https://example.com/a")!, URL(string: "https://example.com:443/b")!))
         precondition(!sameOrigin(URL(string: initial)!, URL(string: "http://192.168.2.100:8080")!))
         precondition(!sameOrigin(URL(string: initial)!, URL(string: "http://192.168.2.100.evil.example:8766")!))
-        print("PASS: 21 URL and origin assertions")
+        precondition(allowsNavigation(URL(string: "https://auth.bezrabotnyi.com/login")!, server: URL(string: initial)!))
+        for bad in ["http://auth.bezrabotnyi.com/login", "https://auth.bezrabotnyi.com.evil.example/login", "https://auth.bezrabotnyi.com:444/login"] {
+            precondition(!allowsNavigation(URL(string: bad)!, server: URL(string: initial)!))
+        }
+        print("PASS: 25 URL, origin and SSO assertions")
     }
 }
 
@@ -172,7 +181,7 @@ enum ServerAddress {
     private func showFailure(_ error: String) {
         if smokeDirectory != nil { finishSmoke(false, reason: error); return }
         web.isHidden = true; failurePanel.isHidden = false
-        failureText.stringValue = "Не удалось открыть сервер команды.\n\n\(endpoint.absoluteString)\n\nПроверьте локальную сеть или VPN.\n\(error)\n\nНовая пустая база вместо общей не создаётся."
+        failureText.stringValue = "Не удалось открыть сервер команды.\n\n\(endpoint.absoluteString)\n\nПроверьте подключение к интернету.\n\(error)\n\nНовая пустая база вместо общей не создаётся."
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
@@ -187,7 +196,7 @@ enum ServerAddress {
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
-        if ServerAddress.sameOrigin(url, endpoint) { decisionHandler(.allow); return }
+        if ServerAddress.allowsNavigation(url, server: endpoint) { decisionHandler(.allow); return }
         decisionHandler(.cancel)
         if action.navigationType == .linkActivated, ["https", "http"].contains(url.scheme ?? "") {
             NSWorkspace.shared.open(url)
@@ -198,7 +207,7 @@ enum ServerAddress {
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if let url = navigationAction.request.url, ["http", "https"].contains(url.scheme ?? "") {
-            if ServerAddress.sameOrigin(url, endpoint) { webView.load(navigationAction.request) }
+            if ServerAddress.allowsNavigation(url, server: endpoint) { webView.load(navigationAction.request) }
             else if navigationAction.navigationType == .linkActivated { NSWorkspace.shared.open(url) }
         }
         return nil
@@ -223,13 +232,12 @@ enum ServerAddress {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard smokeDirectory != nil, !smokeFinished else { return }
         // Real WebKit + real server, read-only. No team members or ledger entries are created.
-        webView.evaluateJavaScript("JSON.stringify({title:document.title,login:!!document.querySelector('#login-form'),work:!!document.querySelector('#work-form'),importer:!!document.querySelector('#evidence-file'),warning:document.body.innerText.includes('Запись экрана отсюда не запускается.')})") { [weak self] value, error in
+        webView.evaluateJavaScript("JSON.stringify({title:document.title,login:location.hostname==='auth.bezrabotnyi.com'&&!!document.querySelector('input[type=password]'),workspace:document.body.innerText.includes('Моя работа')||document.body.innerText.includes('Учёт вкладов')})") { [weak self] value, error in
             guard let self = self else { return }
             guard error == nil, let string = value as? String, let data = string.data(using: .utf8),
                   let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  info["login"] as? Bool == true, info["work"] as? Bool == true,
-                  info["importer"] as? Bool == true, info["warning"] as? Bool == true else {
-                self.finishSmoke(false, reason: "Live server DOM did not match the ledger"); return
+                  (info["login"] as? Bool == true || info["workspace"] as? Bool == true) else {
+                self.finishSmoke(false, reason: "Live page is neither the expected sign-in nor the team workspace"); return
             }
             self.web.takeSnapshot(with: nil) { image, snapshotError in
                 if let image = image, let tiff = image.tiffRepresentation,
@@ -239,7 +247,7 @@ enum ServerAddress {
                         try png.write(to: self.smokeDirectory!.appendingPathComponent("window.png"), options: .atomic)
                     } catch { self.finishSmoke(false, reason: "Cannot save snapshot"); return }
                 } else { self.finishSmoke(false, reason: snapshotError?.localizedDescription ?? "No WebKit snapshot"); return }
-                self.finishSmoke(true, reason: "Real arm64 WebKit rendered the live ledger, login, work form and JSON input; recording disclaimer present")
+                self.finishSmoke(true, reason: "Real arm64 WebKit rendered HTTPS workspace or expected sign-in; no login or financial write was performed")
             }
         }
     }
@@ -267,7 +275,9 @@ enum ServerAddress {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
             return args[i + 1]
         }
-        let raw = value("--server") ?? UserDefaults.standard.string(forKey: "serverURL") ?? ServerAddress.initial
+        let stored = UserDefaults.standard.string(forKey: "serverURL")
+        let legacy = stored == "http://192.168.2.100:8766" || stored == "http://192.168.2.100:8766/"
+        let raw = value("--server") ?? (legacy ? ServerAddress.initial : stored) ?? ServerAddress.initial
         guard let server = ServerAddress.parse(raw) else { fputs("Invalid server URL\n", stderr); exit(2) }
         let smoke = value("--smoke-dir").map { URL(fileURLWithPath: $0, isDirectory: true) }
         let delegate = AppDelegate(endpoint: server, smokeDirectory: smoke)

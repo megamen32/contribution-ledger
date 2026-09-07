@@ -1,0 +1,9 @@
+# Вклад 0.2.0 — Windows x64
+
+Распакуйте архив и откройте Vklad-Windows-x64-v0.2.0.exe.
+Общий сервер: https://vklad.bezrabotnyi.com
+Вход через действующий auth.bezrabotnyi.com. Доступ коллегам выдаётся отдельно, в комплекте нет паролей.
+Это отдельное окно WebView2, без локальной базы вкладов и без записи экрана.
+Нужен Microsoft Edge WebView2 Runtime: https://developer.microsoft.com/microsoft-edge/webview2/
+Сборка прошла go vet и проверку формата PE x64. На Windows пока не запускалась; подписи издателя нет.
+Учёт на сервере доступен также через обычный браузер.

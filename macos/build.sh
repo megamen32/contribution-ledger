@@ -21,7 +21,7 @@ trap 'rm -rf "$STAGE"' EXIT
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 cp macos/README.md "$STAGE/Прочитайте перед запуском.txt"
-hdiutil create -ov -volname 'Вклад Apple Silicon' -srcfolder "$STAGE" -format UDZO "$OUT/Vklad-macOS-arm64-v0.1.1.dmg"
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT/Vklad-macOS-arm64-v0.1.1.zip"
-(cd "$OUT" && shasum -a 256 Vklad-macOS-arm64-v0.1.1.dmg Vklad-macOS-arm64-v0.1.1.zip > SHA256SUMS)
+hdiutil create -ov -volname 'Вклад Apple Silicon' -srcfolder "$STAGE" -format UDZO "$OUT/Vklad-macOS-arm64-v0.2.0.dmg"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT/Vklad-macOS-arm64-v0.2.0.zip"
+(cd "$OUT" && shasum -a 256 Vklad-macOS-arm64-v0.2.0.dmg Vklad-macOS-arm64-v0.2.0.zip > SHA256SUMS)
 echo "Built $APP"

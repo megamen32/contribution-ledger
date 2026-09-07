@@ -21,12 +21,38 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
+  credential   UserCredential?
+  invitesCreated InviteToken[] @relation("InviteCreator")
   sessions     Session[]
   tasksOwned   Task[]      @relation("TaskOwner")
   ledgerEntries LedgerEntry[]
   agreedRates  AgreedLaborRate[]
   jobs         Job[]       @relation("JobActor")
   changes      Change[]
+}
+
+model UserCredential {
+  userId        String   @id
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  login         String   @unique
+  passwordHash  String
+  sessionVersion Int     @default(1)
+  failedAttempts Int     @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model InviteToken {
+  id            String   @id @default(cuid())
+  tokenHash     String   @unique
+  createdById   String
+  createdBy     User     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 model Session {
@@ -65,6 +91,7 @@ model Task {
   status              String   @default("open") // open | in_progress | needs_report | assessing | done | blocked
   category            String?  // dev | research | design | ops | learning | sales | org
   complexity          Int?     // 1..5 descriptive
+  sharedWithTeam      Boolean  @default(false) // explicit publication; private activity/evidence stay private
   revision            Int      @default(1)
   currentReportId     String?
   activeAssessmentId  String?

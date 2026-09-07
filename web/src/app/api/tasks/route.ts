@@ -9,21 +9,18 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const sp = req.nextUrl.searchParams
-  const scope = sp.get("scope") ?? "all"
+  const scope = sp.get("scope") ?? "mine"
   const status = sp.get("status")
-  const where: any = {}
-  if (scope === "mine") where.ownerId = user.id
+  const where: any = scope === "team" ? { sharedWithTeam: true } : { ownerId: user.id }
   if (status) where.status = status
 
   const tasks = await db.task.findMany({
     where,
     orderBy: { updatedAt: "desc" },
-    include: {
-      owner: { select: { id: true, displayName: true, color: true } },
-      _count: { select: { sessions: true, assessmentRounds: true, ledgerEntries: true } },
-    },
+    include: { owner: { select: { id: true, displayName: true, color: true } }, _count: { select: { sessions: true, assessmentRounds: true, ledgerEntries: true } } },
     take: 200,
   })
+  if (scope === "team") return NextResponse.json({ tasks: tasks.map(task => ({ id: task.id, title: task.title, status: task.status, category: task.category, complexity: task.complexity, sharedWithTeam: true, updatedAt: task.updatedAt, owner: task.owner })) })
   return NextResponse.json({ tasks })
 }
 

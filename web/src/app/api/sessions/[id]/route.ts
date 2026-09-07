@@ -39,9 +39,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const session = await db.session.findUnique({ where: { id } })
   if (!session) return NextResponse.json({ error: "not found" }, { status: 404 })
-  if (session.userId !== user.id && user.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 })
-  }
+  if (session.userId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
 
   const now = new Date()
   let intervals: Interval[] = JSON.parse(session.intervalsJson || "[]")
@@ -203,8 +201,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     include: { task: true, user: { select: { id: true, displayName: true, color: true } } },
   })
   if (!session) return NextResponse.json({ error: "not found" }, { status: 404 })
-  if (session.userId !== user.id && user.role !== "admin") {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 })
-  }
+  if (session.userId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
   return NextResponse.json({ session })
 }

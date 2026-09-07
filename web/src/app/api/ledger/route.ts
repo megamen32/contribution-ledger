@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const sp = req.nextUrl.searchParams
-  const scope = sp.get("scope") ?? "team"
+  const scope = sp.get("scope") ?? "mine"
   const kind = sp.get("kind")
-  const where: any = { status: "confirmed" }
-  if (scope === "mine") where.userId = user.id
+  if (scope !== "mine") return NextResponse.json({ error: "Detailed ledger entries are private; use the team totals endpoint" }, { status: 403 })
+  const where: any = { status: "confirmed", userId: user.id }
   if (kind) where.kind = kind
   const entries = await db.ledgerEntry.findMany({
     where,
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   const key = businessKey || `manual:${user.id}:${crypto.randomUUID()}`
   try {
     const entry = await postEntry({
-      userId: userId || user.id,
+      userId: user.role === "admin" && userId ? userId : user.id,
       kind,
       currency: currency || "RUB",
       amountMinor: Math.round(amt),

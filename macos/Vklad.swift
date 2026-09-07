@@ -5,11 +5,7 @@ import UniformTypeIdentifiers
 // A client, not a second ledger: all team data remains on the configured server.
 enum ServerAddress {
     static let initial = "https://vklad.bezrabotnyi.com"
-    static func allowsNavigation(_ url: URL, server: URL) -> Bool {
-        sameOrigin(url, server) || (server.host == "vklad.bezrabotnyi.com" && server.scheme == "https"
-            && url.scheme == "https" && url.host == "auth.bezrabotnyi.com"
-            && (url.port == nil || url.port == 443) && url.user == nil && url.password == nil)
-    }
+    static func allowsNavigation(_ url: URL, server: URL) -> Bool { sameOrigin(url, server) }
     static func parse(_ input: String) -> URL? {
         guard var c = URLComponents(string: input.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = c.scheme?.lowercased(), ["http", "https"].contains(scheme),
@@ -49,11 +45,8 @@ enum ServerAddress {
         precondition(sameOrigin(URL(string: "https://example.com/a")!, URL(string: "https://example.com:443/b")!))
         precondition(!sameOrigin(URL(string: initial)!, URL(string: "http://192.168.2.100:8080")!))
         precondition(!sameOrigin(URL(string: initial)!, URL(string: "http://192.168.2.100.evil.example:8766")!))
-        precondition(allowsNavigation(URL(string: "https://auth.bezrabotnyi.com/login")!, server: URL(string: initial)!))
-        for bad in ["http://auth.bezrabotnyi.com/login", "https://auth.bezrabotnyi.com.evil.example/login", "https://auth.bezrabotnyi.com:444/login"] {
-            precondition(!allowsNavigation(URL(string: bad)!, server: URL(string: initial)!))
-        }
-        print("PASS: 25 URL, origin and SSO assertions")
+        precondition(!allowsNavigation(URL(string: "https://auth.bezrabotnyi.com/login")!, server: URL(string: initial)!))
+        print("PASS: 22 URL and same-origin assertions")
     }
 }
 
@@ -232,12 +225,12 @@ enum ServerAddress {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard smokeDirectory != nil, !smokeFinished else { return }
         // Real WebKit + real server, read-only. No team members or ledger entries are created.
-        webView.evaluateJavaScript("JSON.stringify({title:document.title,login:location.hostname==='auth.bezrabotnyi.com'&&!!document.querySelector('input[type=password]'),workspace:document.body.innerText.includes('Моя работа')||document.body.innerText.includes('Учёт вкладов')})") { [weak self] value, error in
+        webView.evaluateJavaScript("JSON.stringify({login:location.hostname==='vklad.bezrabotnyi.com'&&location.pathname==='/login'&&!!document.querySelector('input[type=password]'),workspace:document.body.innerText.includes('Моя работа')||document.body.innerText.includes('Учёт вкладов')})") { [weak self] value, error in
             guard let self = self else { return }
             guard error == nil, let string = value as? String, let data = string.data(using: .utf8),
                   let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   (info["login"] as? Bool == true || info["workspace"] as? Bool == true) else {
-                self.finishSmoke(false, reason: "Live page is neither the expected sign-in nor the team workspace"); return
+                self.finishSmoke(false, reason: "Live page is neither Vklad login nor the team workspace"); return
             }
             self.web.takeSnapshot(with: nil) { image, snapshotError in
                 if let image = image, let tiff = image.tiffRepresentation,
@@ -247,7 +240,7 @@ enum ServerAddress {
                         try png.write(to: self.smokeDirectory!.appendingPathComponent("window.png"), options: .atomic)
                     } catch { self.finishSmoke(false, reason: "Cannot save snapshot"); return }
                 } else { self.finishSmoke(false, reason: snapshotError?.localizedDescription ?? "No WebKit snapshot"); return }
-                self.finishSmoke(true, reason: "Real arm64 WebKit rendered HTTPS workspace or expected sign-in; no login or financial write was performed")
+                self.finishSmoke(true, reason: "Real arm64 WebKit rendered Vklad HTTPS login or workspace; no login or financial write was performed")
             }
         }
     }

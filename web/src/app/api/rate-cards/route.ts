@@ -26,6 +26,7 @@ export async function GET() {
       orderBy: { version: "desc" },
     }),
     db.agreedLaborRate.findMany({
+      where: { userId: user.id },
       include: { user: { select: { id: true, displayName: true, color: true } } },
       orderBy: { createdAt: "desc" },
     }),

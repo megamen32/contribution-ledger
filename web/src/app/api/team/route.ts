@@ -11,7 +11,7 @@ export async function GET() {
 
   const users = await db.user.findMany({
     where: { active: true },
-    select: { id: true, displayName: true, color: true, role: true, email: true },
+    select: { id: true, displayName: true, color: true, role: true },
     orderBy: { displayName: "asc" },
   })
 
@@ -82,34 +82,17 @@ export async function GET() {
   const totalLabor = members.reduce((a, m) => a + m.labor, 0)
   const totalReversal = members.reduce((a, m) => a + m.reversal, 0)
 
-  // tasks summary
+  // Shared board contains only explicitly published task cards. Detailed activity remains private.
   const tasks = await db.task.findMany({
-    select: { id: true, status: true, category: true, ownerId: true, createdAt: true, updatedAt: true },
+    where: { sharedWithTeam: true },
+    select: { id: true, title: true, status: true, category: true, complexity: true, ownerId: true, updatedAt: true, owner: { select: { id: true, displayName: true, color: true } } },
+    orderBy: { updatedAt: "desc" }, take: 100,
   })
   const tasksByStatus = groupCount(tasks, (t) => t.status)
   const tasksByCategory = groupCount(tasks, (t) => t.category ?? "без категории")
   const tasksByOwner = groupCount(tasks, (t) => t.ownerId)
-
-  // recent entries (last 12) for the activity feed
-  const recent = await db.ledgerEntry.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 12,
-    include: {
-      user: { select: { id: true, displayName: true, color: true } },
-      task: { select: { id: true, title: true } },
-    },
-  })
-
-  // hours over last 14 days (by day) for chart
-  const sessions = await db.session.findMany({
-    where: { status: "uploaded", startedAt: { gte: daysAgo(14) } },
-    select: { userId: true, startedAt: true, confirmedSeconds: true },
-  })
+  const recent: never[] = []
   const hoursByDay: Record<string, number> = {}
-  for (const s of sessions) {
-    const day = s.startedAt.toISOString().slice(0, 10)
-    hoursByDay[day] = (hoursByDay[day] ?? 0) + (s.confirmedSeconds ?? 0) / 3600
-  }
 
   const totalSettlement = members.reduce((a, m) => a + m.settlement, 0)
   const totalOutstandingLabor = members.reduce((a, m) => a + m.outstandingLabor, 0)
@@ -137,6 +120,7 @@ export async function GET() {
       byStatus: tasksByStatus,
       byCategory: tasksByCategory,
       byOwner: tasksByOwner,
+      published: tasks,
     },
     recent,
     hoursByDay,

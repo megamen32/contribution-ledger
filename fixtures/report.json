@@ -1,0 +1,38 @@
+{
+  "schema_version": "2.0",
+  "task_id": "task-fixture",
+  "author_id": "m1",
+  "revision": 1,
+  "goal": "Check whether an API supports a requested integration",
+  "actions": [
+    {
+      "text": "Reviewed documentation and ran a prototype",
+      "basis": "artifact_excerpt",
+      "evidence_ids": [
+        "src1"
+      ]
+    }
+  ],
+  "result": {
+    "text": "A documented restriction prevents the original approach; an alternative was recorded.",
+    "basis": "artifact_excerpt",
+    "evidence_ids": [
+      "src1"
+    ]
+  },
+  "result_status": "negative_research",
+  "excerpts": [
+    {
+      "evidence_id": "src1",
+      "artifact_id": "artifact-fixture",
+      "locator": "notes.md:1-4",
+      "kind": "artifact_excerpt",
+      "text": "SYNTHETIC FIXTURE: prototype returns an unsupported-operation response for method X."
+    }
+  ],
+  "omitted_material": [],
+  "limitations": [
+    "Synthetic fixture, not an actual research result."
+  ],
+  "suggested_task_split": []
+}

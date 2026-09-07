@@ -1,0 +1,22 @@
+{
+  "schema_version": "2.0",
+  "packet_id": "packet-fixture",
+  "assessment": "assessable",
+  "category": "research",
+  "grade": "middle",
+  "complexity": 2,
+  "typical_duration": {
+    "low_seconds": 3600,
+    "high_seconds": 7200
+  },
+  "price_status": "rate_available",
+  "rate_id": "synthetic-contractor",
+  "evidence_ids": [
+    "e001"
+  ],
+  "limitations": [
+    "Synthetic estimate"
+  ],
+  "missing_information": [],
+  "rationale": "Synthetic answer for testing range arithmetic."
+}

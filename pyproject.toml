@@ -1,0 +1,31 @@
+[project]
+name = "contribution-ledger"
+version = "0.1.0"
+description = "Private team's money and work ledger, Screenpipe evidence, OmniRoute evaluations"
+requires-python = ">=3.12,<3.14"
+dependencies = ["pydantic>=2.9,<3", "fastapi>=0.115,<1", "uvicorn>=0.30,<1", "httpx>=0.27,<1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+build = ["pyinstaller>=6,<7"]
+
+[project.scripts]
+contribution = "contribution.__main__:main"
+
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contribution", "src/contribution_spec"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

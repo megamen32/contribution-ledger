@@ -1,0 +1,25 @@
+[Unit]
+Description=Contribution Ledger private team web application
+After=network.target
+
+[Service]
+Type=simple
+User=roomhacker
+Group=roomhacker
+Environment=HOME=/home/roomhacker
+Environment=CONTRIBUTION_DATA=/home/roomhacker/.local/share/contribution-ledger
+Environment=CONTRIBUTION_HOST=192.168.2.100
+Environment=CONTRIBUTION_PORT=8766
+EnvironmentFile=-/etc/contribution-ledger.env
+ExecStart=/opt/contribution-ledger/contribution serve
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/roomhacker/.local/share/contribution-ledger
+
+[Install]
+WantedBy=multi-user.target

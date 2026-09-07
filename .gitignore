@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.spec
+*.sqlite*
+.env
+*.key
+var/
+.DS_Store

@@ -1,0 +1,26 @@
+{
+  "schema_version": "2.0",
+  "session_id": "session-fixture",
+  "device_id": "device-fixture",
+  "revision": 1,
+  "timezone": "UTC",
+  "segments": [
+    {
+      "segment_id": "segment-fixture",
+      "start_utc": 1788742800,
+      "end_utc": 1788746400,
+      "confirmed_seconds": 3600,
+      "source": "timer_confirmed"
+    }
+  ],
+  "allocations": [
+    {
+      "task_id": "task-fixture",
+      "seconds": 3600
+    }
+  ],
+  "artifacts": [
+    "artifact-fixture"
+  ],
+  "note": "Synthetic, not a real person's activity."
+}

@@ -1,0 +1,23 @@
+[Unit]
+Description=Contribution Ledger durable OmniRoute worker
+After=network.target contribution-ledger.service
+
+[Service]
+Type=simple
+User=roomhacker
+Group=roomhacker
+Environment=HOME=/home/roomhacker
+Environment=CONTRIBUTION_DATA=/home/roomhacker/.local/share/contribution-ledger
+EnvironmentFile=-/etc/contribution-ledger.env
+ExecStart=/opt/contribution-ledger/contribution worker
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/roomhacker/.local/share/contribution-ledger
+
+[Install]
+WantedBy=multi-user.target

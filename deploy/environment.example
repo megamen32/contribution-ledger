@@ -1,0 +1,9 @@
+# Only for the team's private network or VPN. Never publish this HTTP port on the Internet.
+CONTRIBUTION_HOST=192.168.2.100
+CONTRIBUTION_PORT=8766
+OMNIROUTE_BASE_URL=http://127.0.0.1:20128/v1
+SUMMARY_MODEL=minimax/MiniMax-M3
+JUDGE_MODELS=glm-5.3,gpt-6
+# Add only after the router grants this application completion access.
+# OMNIROUTE_API_KEY_FILE=/home/roomhacker/.config/contribution-ledger/omniroute.key
+# CONTRIBUTION_HTTPS=1 only behind a verified HTTPS reverse proxy.

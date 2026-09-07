@@ -1,0 +1,42 @@
+{
+  "schema_version": "2.0",
+  "packet_id": "packet-fixture",
+  "scope": "One research outcome",
+  "goal": "Check whether an API supports a requested integration",
+  "constraints": [
+    "Assess competent work using the stated tools, not a manual-only baseline"
+  ],
+  "available_tools": [
+    "AI coding assistant and normal documentation access"
+  ],
+  "outcome": "A documented restriction prevents the original approach; an alternative was recorded.",
+  "result_status": "negative_research",
+  "evidence": [
+    {
+      "evidence_id": "e001",
+      "kind": "artifact_excerpt",
+      "text": "SYNTHETIC FIXTURE: prototype returns an unsupported-operation response for method X."
+    }
+  ],
+  "limitations": [
+    "Synthetic fixture, not an actual research result."
+  ],
+  "omitted_material": [],
+  "visual_review_required": false,
+  "rate_card_id": "synthetic-card",
+  "rates": [
+    {
+      "rate_id": "synthetic-contractor",
+      "category": "research",
+      "grade": "middle",
+      "currency": "RUB",
+      "low_minor_per_hour": 100000,
+      "high_minor_per_hour": 200000,
+      "basis": "contractor_hour",
+      "market": "SYNTHETIC",
+      "provenance": "synthetic_fixture",
+      "source": "Synthetic arithmetic fixture, not a market claim",
+      "checked_on": "2026-09-07"
+    }
+  ]
+}

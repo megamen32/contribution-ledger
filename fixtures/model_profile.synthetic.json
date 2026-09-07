@@ -1,0 +1,37 @@
+{
+  "profile_id": "synthetic-profile",
+  "models": [
+    {
+      "key": "a",
+      "family": "qwen",
+      "tag": "fixture-only",
+      "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "runtime_version": "fixture-not-installed",
+      "quantization": "fixture"
+    },
+    {
+      "key": "b",
+      "family": "gemma",
+      "tag": "fixture-only",
+      "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "runtime_version": "fixture-not-installed",
+      "quantization": "fixture"
+    },
+    {
+      "key": "c",
+      "family": "mistral",
+      "tag": "fixture-only",
+      "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "runtime_version": "fixture-not-installed",
+      "quantization": "fixture"
+    }
+  ],
+  "samples_per_model": 3,
+  "temperature": 0.2,
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "max_output_tokens": 1536
+}

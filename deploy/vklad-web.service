@@ -13,7 +13,7 @@ Environment=HOSTNAME=127.0.0.1
 Environment=PORT=8768
 Environment=PUBLIC_ORIGIN=https://vklad.bezrabotnyi.com
 Environment=NEXTAUTH_URL=https://vklad.bezrabotnyi.com
-Environment=NEXTAUTH_SECRET_FILE=/home/roomhacker/.local/share/vklad/nextauth.key
+Environment=NEXTAUTH_SECRET_FILE=/home/roomhacker/.local/share/contribution-ledger/team.key
 Environment=DATABASE_URL=file:/home/roomhacker/.local/share/vklad/ledger.db
 Environment=OMNIROUTE_BASE_URL=http://127.0.0.1:20128/v1
 Environment=OMNIROUTE_API_KEY_FILE=/home/roomhacker/.local/share/vklad/omniroute.key

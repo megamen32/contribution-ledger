@@ -4,9 +4,12 @@ import { signIn } from "next-auth/react"
 import { api } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { parseRegistrationLink, restoreRegistrationLink, REGISTRATION_LINK_KEY } from "@/lib/registration-link"
 
 export default function Login() {
   const [invite, setInvite] = useState("")
+  const [ownerSetup, setOwnerSetup] = useState(false)
+  const [hasInvitationLink, setHasInvitationLink] = useState(false)
   const [register, setRegister] = useState(false)
   const [login, setLogin] = useState("")
   const [name, setName] = useState("")
@@ -16,12 +19,23 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.hash.slice(1)).get("invite")
-    if (token) {
-      setInvite(token)
+    function readInvitation() {
+      let link = parseRegistrationLink(window.location.hash)
+      try {
+        if (link) sessionStorage.setItem(REGISTRATION_LINK_KEY, JSON.stringify(link))
+        else link = restoreRegistrationLink(sessionStorage.getItem(REGISTRATION_LINK_KEY))
+      } catch { /* The current link still works when browser storage is unavailable. */ }
+      if (!link) return
+      setInvite(link.token)
+      setOwnerSetup(link.kind === "setup")
+      setHasInvitationLink(true)
       setRegister(true)
+      setError("")
       window.history.replaceState(null, "", "/login")
     }
+    readInvitation()
+    window.addEventListener("hashchange", readInvitation)
+    return () => window.removeEventListener("hashchange", readInvitation)
   }, [])
 
   async function submit(event: React.FormEvent) {
@@ -31,7 +45,13 @@ export default function Login() {
     try {
       if (register) {
         if (password !== repeat) throw new Error("Пароли не совпадают")
-        await api("/api/account/register", { method: "POST", json: { login, displayName: name, password, invite } })
+        await api(ownerSetup ? "/api/account/setup" : "/api/account/register", { method: "POST", json: { login, displayName: name, password, invite } })
+        // Registration has consumed the invitation even if the following sign-in fails.
+        setRegister(false)
+        setOwnerSetup(false)
+        setHasInvitationLink(false)
+        setInvite("")
+        try { sessionStorage.removeItem(REGISTRATION_LINK_KEY) } catch {}
       }
       const result = await signIn("credentials", { login, password, redirect: false, callbackUrl: "/" })
       if (!result?.ok || result.error) throw new Error("Неверный логин или пароль")
@@ -72,7 +92,7 @@ export default function Login() {
                 Ещё раз
                 <Input type="password" required maxLength={128} autoComplete="new-password" value={repeat} onChange={event => setRepeat(event.target.value)} />
               </label>
-              {!invite && (
+              {!hasInvitationLink && (
                 <label className="block space-y-2 text-sm font-medium">
                   Приглашение
                   <Input required maxLength={64} value={invite} onChange={event => setInvite(event.target.value.trim())} />

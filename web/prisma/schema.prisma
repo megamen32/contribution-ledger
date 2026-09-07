@@ -43,6 +43,14 @@ model UserCredential {
   updatedAt     DateTime @updatedAt
 }
 
+// One-use first-owner setup, issued locally by the server operator, never a public first-come registration.
+model OwnerSetup {
+  id         String   @id @default("first-owner")
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+}
+
 model InviteToken {
   id            String   @id @default(cuid())
   tokenHash     String   @unique

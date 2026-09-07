@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
     const secs = Math.floor(Number(manualSeconds))
     let rate: Awaited<ReturnType<typeof db.agreedLaborRate.findFirst>> = null
     if (task.category) {
-      rate = await db.agreedLaborRate.findFirst({ where: { userId: user.id, category: task.category } })
+      rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: user.id, category: task.category } })
     }
-    if (!rate) rate = await db.agreedLaborRate.findFirst({ where: { userId: user.id } })
+    if (!rate) rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: user.id } })
     const rateMinor = rate?.ratePerHourMinor ?? 0
     const laborMinor = Math.round((secs * rateMinor) / 3600)
     await db.taskAllocation.create({

@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import type { Member } from "@/components/user-switcher"
 import { api } from "@/lib/api-client"
+import { AgreedRateForm } from "@/components/agreed-rate-form"
 import { formatMoney } from "@/lib/money"
 import {
   Card,
@@ -243,6 +244,7 @@ export function SettingsView({ user: _user }: { user: Member }) {
     <div className="flex flex-col gap-6">
       <SettingsHeader />
 
+      <AgreedRateForm onSaved={refresh} />
       <AgreedRatesCard rates={rateCards?.agreed ?? []} />
 
       <MarketRateCardCard market={rateCards?.market ?? []} />

@@ -132,12 +132,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       const task = session.taskId ? await db.task.findUnique({ where: { id: session.taskId } }) : null
       let rate: Awaited<ReturnType<typeof db.agreedLaborRate.findFirst>> = null
       if (task?.category) {
-        rate = await db.agreedLaborRate.findFirst({
+        rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" },
           where: { userId: session.userId, category: task.category },
         })
       }
       if (!rate) {
-        rate = await db.agreedLaborRate.findFirst({ where: { userId: session.userId } })
+        rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: session.userId } })
       }
       const rateMinor = rate?.ratePerHourMinor ?? 0
 

@@ -44,7 +44,7 @@ test("router rejects unannounced model substitution",async()=>{
   const previous=globalThis.fetch
   const oldKey=process.env.OMNIROUTE_API_KEY
   process.env.OMNIROUTE_API_KEY="synthetic-test"
-  globalThis.fetch=(async()=>Response.json({model:"other",choices:[{message:{content:"{}"}}]})) as typeof fetch
+  globalThis.fetch=(async()=>Response.json({model:"other",choices:[{message:{content:"{}"}}]})) as unknown as typeof fetch
   try { await expect(complete("glm-5.3",[{role:"user",content:"test"}])).rejects.toThrow("Оценка не засчитана") }
   finally {globalThis.fetch=previous; if(oldKey===undefined) delete process.env.OMNIROUTE_API_KEY; else process.env.OMNIROUTE_API_KEY=oldKey}
 })

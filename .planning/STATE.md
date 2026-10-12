@@ -8,19 +8,25 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 ## Current Position
 Phase: 1 of 1 (Открытое демо и публикация)
 Plan: 1 of 1 in current phase
-Status: In progress
-Last activity: 2026-10-12 — проверены исходники и текущая поставка.
-Progress: 0%
+Status: Phase complete
+Last activity: 2026-10-12 — опубликовано и проверено анонимное демо, macOS download и публичный GitHub.
+Progress: 100%
 
 ## Accumulated Context
 ### Decisions
 - Демо хранится только в браузере, API кабинета сохраняет авторизацию.
 ### Pending Todos
-- Демо, сборка, живой браузер, проверка секретов и публикация.
+Нет.
 ### Blockers/Concerns
 Нет.
 
 ## Session Continuity
 Last session: 2026-10-12
-Stopped at: Implementation
+Stopped at: Consumer acceptance passed
 Resume file: None
+
+### Quick Tasks Completed
+
+| # | Description | Date | Status | Directory |
+|---|-------------|------|--------|-----------|
+| 261012-tij | Открытое демо, Mac download и публичный GitHub | 2026-10-12 | Verified | quick/261012-tij-open-public-demo-and-publish-audited-rep/ |

@@ -18,3 +18,22 @@ web/.env*
 web/prisma/*.db*
 
 web/*.tsbuildinfo
+
+# Local configuration and credentials, at any directory depth.
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.p12
+*.pfx
+credentials/
+secrets/
+
+# Runtime databases and private work evidence belong outside source control.
+*.db
+*.db-*
+*.log
+exports/
+recordings/
+captures/

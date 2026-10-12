@@ -19,6 +19,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
+    setRegister(new URLSearchParams(window.location.search).get("register") === "1")
     function readInvitation() {
       let link = parseRegistrationLink(window.location.hash)
       try {
@@ -67,6 +68,7 @@ export default function Login() {
     <main className="min-h-screen bg-background px-5 py-14 sm:flex sm:items-center sm:justify-center sm:py-8">
       <section className="mx-auto w-full max-w-sm">
         <h1 className="text-4xl font-semibold tracking-tight">Вклад</h1>
+        <p className="mt-4 text-sm text-muted-foreground"><a href="/demo" className="text-primary hover:underline">Попробовать демо без регистрации →</a></p>
 
         <form onSubmit={submit} className="mt-10 space-y-5">
           {register && (
@@ -112,7 +114,7 @@ export default function Login() {
           <button type="button" className="text-primary hover:underline" onClick={() => { setRegister(!register); setError("") }}>
             {register ? "У меня уже есть аккаунт" : "Создать аккаунт"}
           </button>
-          <a href="/downloads/" className="text-muted-foreground hover:text-foreground hover:underline">Скачать</a>
+          <a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="text-muted-foreground hover:text-foreground hover:underline">Скачать для macOS</a>
         </div>
       </section>
     </main>

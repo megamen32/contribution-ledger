@@ -1200,7 +1200,7 @@ function AssessmentsTab({
     <div className="p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-medium">Оценки consortium 2×3</h3>
+          <h3 className="text-sm font-medium">ИИ-оценки 2×3</h3>
           <p className="text-xs text-muted-foreground">
             Две модели × три запуска = 6 ответов. Медиана медиан, голосование по
             категории.
@@ -1261,7 +1261,7 @@ function AssessmentsTab({
           <Sparkles className="h-7 w-7" />
           <span>Оценок пока нет</span>
           <span className="text-xs">
-            Создайте отчёт и запустите consortium 2×3.
+            Создайте отчёт и запустите ИИ-оценку 2×3.
           </span>
         </div>
       ) : (
@@ -1663,7 +1663,7 @@ function JudgeGrid({ runs }: { runs: JudgeRunRow[] }) {
   return (
     <div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Ответы 9 судей (3 модели × 3 повтора)
+        Ответы {runs.length} судей ({new Set(runs.map(run => run.modelKey)).size} модели × 3 повтора)
       </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {order.map((r) => (

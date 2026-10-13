@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
   const task = await db.task.findUnique({ where: { id } })
-  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id || task.workspaceId !== user.workspaceId) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   const body = await req.json().catch(() => ({} as any))
   const content = body.content ?? {

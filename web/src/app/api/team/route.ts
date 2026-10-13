@@ -1,3 +1,4 @@
+import { projectMembers } from "@/lib/project-membership"
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
@@ -9,14 +10,10 @@ export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
-  const users = await db.user.findMany({
-    where: { active: true, workspaceId: user.workspaceId },
-    select: { id: true, displayName: true, color: true, role: true },
-    orderBy: { displayName: "asc" },
-  })
+  const users = await projectMembers(user.workspaceId)
 
   const entries = await db.ledgerEntry.findMany({
-    where: { status: "confirmed", user: { workspaceId: user.workspaceId } },
+    where: { status: "confirmed", projectScope: { workspaceId: user.workspaceId } },
     select: {
       id: true,
       userId: true,
@@ -84,7 +81,7 @@ export async function GET() {
 
   // Shared board contains only explicitly published task cards. Detailed activity remains private.
   const tasks = await db.task.findMany({
-    where: { sharedWithTeam: true, owner: { workspaceId: user.workspaceId } },
+    where: { sharedWithTeam: true, workspaceId: user.workspaceId },
     select: { id: true, title: true, status: true, category: true, complexity: true, ownerId: true, updatedAt: true, owner: { select: { id: true, displayName: true, color: true } } },
     orderBy: { updatedAt: "desc" }, take: 100,
   })

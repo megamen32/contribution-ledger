@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { hashPassword, LOGIN_RE, normalizeLogin, tokenHash, validatePassword } from "@/lib/account"
+import { hashPassword, LOGIN_RE, normalizeLogin, validatePassword } from "@/lib/account"
 import { createWorkspace } from "@/lib/workspace"
+import { invitationProject, joinByInvitation } from "@/lib/project-invitation"
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
@@ -16,18 +17,16 @@ export async function POST(req: NextRequest) {
     const result = await db.$transaction(async tx => {
       let project
       if (invite) {
-        const now = new Date()
-        const invitation = await tx.inviteToken.findUnique({ where: { tokenHash: tokenHash(invite) }, include: { createdBy: true } })
-        if (!invitation || invitation.usedAt || invitation.expiresAt <= now || !invitation.createdBy.active || invitation.createdBy.role !== "admin" || invitation.createdBy.workspaceId !== invitation.workspaceId) throw new Error("invite-invalid")
-        project = await tx.workspace.findUnique({ where: { id: invitation.workspaceId } })
-        if (!project) throw new Error("invite-invalid")
-        const fresh = await tx.inviteToken.updateMany({ where: { id: invitation.id, usedAt: null, expiresAt: { gt: now } }, data: { usedAt: now } })
-        if (fresh.count !== 1) throw new Error("invite-invalid")
+        const checked = await invitationProject(tx, invite)
+        if (checked.invitation.usedAt || checked.invitation.expiresAt <= new Date()) throw new Error("invite-invalid")
+        project = checked.project
       } else {
         project = await createWorkspace(tx, projectName)
       }
       const user = await tx.user.create({ data: { workspaceId: project.id, displayName: name, email: `${crypto.randomUUID()}@vklad.invalid`, role: invite ? "member" : "admin" } })
       await tx.userCredential.create({ data: { userId: user.id, login, passwordHash } })
+      if (invite) await joinByInvitation(tx, invite, user.id)
+      else await tx.workspaceMembership.create({ data: { workspaceId: project.id, userId: user.id, role: "admin" } })
       return { user: { id: user.id, displayName: user.displayName }, project }
     })
     return NextResponse.json(result, { status: 201 })

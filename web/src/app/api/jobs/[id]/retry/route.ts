@@ -8,7 +8,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const job = await db.job.findUnique({ where: { id } })
-  if (!job || job.actorId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (!job || job.actorId !== user.id || job.workspaceId !== user.workspaceId) return NextResponse.json({ error: "not found" }, { status: 404 })
   if (job.state !== "failed" && job.state !== "cancelled") {
     return NextResponse.json({ error: "job not in failed/cancelled state" }, { status: 409 })
   }

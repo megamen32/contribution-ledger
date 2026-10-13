@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "amountMinor must be positive" }, { status: 400 })
   }
 
-  const target = await db.ledgerEntry.findUnique({ where: { id, user: { workspaceId: user.workspaceId }, ...(user.role === "admin" ? {} : { userId: user.id }) } })
+  const target = await db.ledgerEntry.findUnique({ where: { id, projectScope: { workspaceId: user.workspaceId }, ...(user.role === "admin" ? {} : { userId: user.id }) } })
   if (!target) return NextResponse.json({ error: "entry not found" }, { status: 404 })
 
   const outstanding = await outstandingFor(id)
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   try {
     const settlement = await postEntry({
+        workspaceId: user.workspaceId,
       userId: target.userId,
       kind: "settlement",
       currency: target.currency,

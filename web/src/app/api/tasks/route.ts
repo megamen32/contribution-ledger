@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
   const scope = sp.get("scope") ?? "mine"
   const status = sp.get("status")
-  const where: any = scope === "team" ? { sharedWithTeam: true, owner: { workspaceId: user.workspaceId } } : { ownerId: user.id }
+  const where: any = scope === "team" ? { sharedWithTeam: true, workspaceId: user.workspaceId } : { ownerId: user.id, workspaceId: user.workspaceId }
   if (status) where.status = status
 
   const tasks = await db.task.findMany({
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
 
   const task = await db.task.create({
     data: {
+      workspaceId: user.workspaceId,
       title,
       description: description ?? "",
       ownerId: user.id,
@@ -50,9 +51,9 @@ export async function POST(req: NextRequest) {
     const secs = Math.floor(Number(manualSeconds))
     let rate: Awaited<ReturnType<typeof db.agreedLaborRate.findFirst>> = null
     if (task.category) {
-      rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: user.id, category: task.category } })
+      rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { workspaceId: user.workspaceId, userId: user.id, category: task.category } })
     }
-    if (!rate) rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: user.id } })
+    if (!rate) rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { workspaceId: user.workspaceId, userId: user.id } })
     const rateMinor = rate?.ratePerHourMinor ?? 0
     const laborMinor = Math.round((secs * rateMinor) / 3600)
     await db.taskAllocation.create({
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     })
     if (laborMinor > 0) {
       await postEntry({
+        workspaceId: user.workspaceId,
         userId: user.id,
         kind: "labor",
         currency: rate?.currency ?? "RUB",

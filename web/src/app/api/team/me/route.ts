@@ -10,28 +10,28 @@ export async function GET() {
 
   const [sessions, tasks, entries, activeSession, rateCards] = await Promise.all([
     db.session.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId, userId: user.id },
       orderBy: { startedAt: "desc" },
       take: 50,
       include: { task: { select: { id: true, title: true, status: true } } },
     }),
     db.task.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: user.id, workspaceId: user.workspaceId },
       orderBy: { updatedAt: "desc" },
       take: 50,
       include: { _count: { select: { sessions: true, assessmentRounds: true } } },
     }),
     db.ledgerEntry.findMany({
-      where: { userId: user.id, status: "confirmed" },
+      where: { projectScope: { workspaceId: user.workspaceId }, userId: user.id, status: "confirmed" },
       orderBy: { createdAt: "desc" },
       // Totals include the whole ledger history, not the latest page.
       include: { task: { select: { id: true, title: true } } },
     }),
     db.session.findFirst({
-      where: { userId: user.id, status: { in: ["recording", "paused"] } },
+      where: { workspaceId: user.workspaceId, userId: user.id, status: { in: ["recording", "paused"] } },
       include: { task: { select: { id: true, title: true } } },
     }),
-    db.agreedLaborRate.findMany({ where: { userId: user.id } }),
+    db.agreedLaborRate.findMany({ where: { workspaceId: user.workspaceId, userId: user.id } }),
   ])
 
   const sum = (kinds: string[]) =>
@@ -50,7 +50,7 @@ export async function GET() {
 
   // total team contribution for share calculation
   const allEntries = await db.ledgerEntry.findMany({
-    where: { status: "confirmed", user: { workspaceId: user.workspaceId } },
+    where: { status: "confirmed", projectScope: { workspaceId: user.workspaceId } },
     select: { userId: true, kind: true, amountMinor: true },
   })
   const teamByUser: Record<string, number> = {}

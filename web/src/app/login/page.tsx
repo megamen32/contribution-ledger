@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, signOut } from "next-auth/react"
 import { api } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ export default function Login() {
   const [repeat, setRepeat] = useState("")
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
+  const [signedIn, setSignedIn] = useState<{ displayName: string } | null>(null)
 
   useEffect(() => {
     setRegister(new URLSearchParams(window.location.search).get("register") === "1")
@@ -34,29 +35,46 @@ export default function Login() {
       setRegister(true)
       setError("")
       window.history.replaceState(null, "", "/login")
+      if (link.kind === "invite") api<{ user: { displayName: string } | null }>("/api/me").then(data => setSignedIn(data.user)).catch(() => setSignedIn(null))
     }
     readInvitation()
     window.addEventListener("hashchange", readInvitation)
     return () => window.removeEventListener("hashchange", readInvitation)
   }, [])
 
+  function clearInvitation() {
+    setOwnerSetup(false); setHasInvitationLink(false); setInvite("")
+    try { sessionStorage.removeItem(REGISTRATION_LINK_KEY) } catch {}
+  }
+  async function acceptCurrentInvitation() {
+    setError(""); setBusy(true)
+    try { await api("/api/account/invite/accept", { method: "POST", json: { invite } }); clearInvitation(); window.location.assign("/") }
+    catch (error) { setError(error instanceof Error ? error.message : "Не удалось принять приглашение"); setBusy(false) }
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     setError("")
     setBusy(true)
     try {
+      const existingInvitation = !register && !ownerSetup ? invite : ""
+      let registeredProject: string | undefined
       if (register) {
         if (password !== repeat) throw new Error("Пароли не совпадают")
-        await api(ownerSetup ? "/api/account/setup" : "/api/account/register", { method: "POST", json: { login, displayName: name, password, invite, projectName } })
+        const result = await api<{ project?: { id: string } }>(ownerSetup ? "/api/account/setup" : "/api/account/register", { method: "POST", json: { login, displayName: name, password, invite, projectName } })
+        registeredProject = result.project?.id
         // Registration has consumed the invitation even if the following sign-in fails.
         setRegister(false)
-        setOwnerSetup(false)
-        setHasInvitationLink(false)
-        setInvite("")
-        try { sessionStorage.removeItem(REGISTRATION_LINK_KEY) } catch {}
+        clearInvitation()
       }
       const result = await signIn("credentials", { login, password, redirect: false, callbackUrl: "/" })
       if (!result?.ok || result.error) throw new Error("Неверный логин или пароль")
+      if (existingInvitation) {
+        const data = await api<{ user: { displayName: string } }>("/api/me")
+        setSignedIn(data.user)
+        await api("/api/account/invite/accept", { method: "POST", json: { invite: existingInvitation } })
+        clearInvitation()
+      } else if (registeredProject) await api("/api/projects/switch", { method: "POST", json: { projectId: registeredProject } })
       window.location.assign("/")
     } catch (error) {
       setError(error instanceof Error ? error.message : "Не удалось войти")
@@ -71,7 +89,7 @@ export default function Login() {
         <h1 className="text-4xl font-semibold tracking-tight">Вклад</h1>
         <p className="mt-4 text-sm text-muted-foreground"><a href="/demo" className="text-primary hover:underline">Попробовать демо без регистрации →</a></p>
 
-        <form onSubmit={submit} className="mt-10 space-y-5">
+        {signedIn && invite && !ownerSetup ? <section className="mt-10 space-y-5"><h2 className="text-xl font-semibold">Приглашение в проект</h2><p className="text-sm text-muted-foreground">Вы вошли как {signedIn.displayName}. Новый проект добавится к вашим проектам, и вы сможете переключаться между ними.</p><Button disabled={busy} className="w-full" onClick={acceptCurrentInvitation}>{busy ? "…" : "Принять приглашение"}</Button>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<div className="flex flex-wrap gap-4 text-sm"><a className="text-primary hover:underline" href="/">К моим проектам</a><button className="text-primary hover:underline" onClick={() => signOut({ callbackUrl: "/login" })}>Войти в другой аккаунт</button></div></section> : <><form onSubmit={submit} className="mt-10 space-y-5">
           {register && <p className="text-sm text-muted-foreground">{hasInvitationLink ? "Вы присоединитесь к проекту по приглашению." : "Создайте свой проект и пригласите в него команду."}</p>}
           {register && (
             <label className="block space-y-2 text-sm font-medium">
@@ -113,7 +131,7 @@ export default function Login() {
           </button>
           <a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="text-muted-foreground hover:text-foreground hover:underline">Скачать для macOS</a>
         </div>
-        {register && hasInvitationLink && <button className="mt-4 text-sm text-primary hover:underline" type="button" onClick={() => { setInvite(""); setOwnerSetup(false); setHasInvitationLink(false); setError(""); try { sessionStorage.removeItem(REGISTRATION_LINK_KEY) } catch {} }}>Создать свой проект вместо вступления</button>}
+        {register && hasInvitationLink && <button className="mt-4 text-sm text-primary hover:underline" type="button" onClick={() => { clearInvitation(); setError("") }}>Создать свой проект вместо вступления</button>}</>}
         <footer className="mt-8 text-sm text-muted-foreground"><a href="https://github.com/megamen32/contribution-ledger" className="hover:underline">Исходный код на GitHub</a></footer>
       </section>
     </main>

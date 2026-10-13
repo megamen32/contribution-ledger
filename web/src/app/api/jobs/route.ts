@@ -7,7 +7,7 @@ export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const jobs = await db.job.findMany({
-    where: { actorId: user.id },
+    where: { actorId: user.id, workspaceId: user.workspaceId },
     orderBy: { createdAt: "desc" },
     take: 100,
     include: { actor: { select: { id: true, displayName: true, color: true } } },

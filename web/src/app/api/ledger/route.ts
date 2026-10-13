@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const scope = sp.get("scope") ?? "mine"
   const kind = sp.get("kind")
   if (scope !== "mine") return NextResponse.json({ error: "Detailed ledger entries are private; use the team totals endpoint" }, { status: 403 })
-  const where: any = { status: "confirmed", userId: user.id }
+  const where: any = { status: "confirmed", userId: user.id, projectScope: { workspaceId: user.workspaceId } }
   if (kind) where.kind = kind
   const entries = await db.ledgerEntry.findMany({
     where,
@@ -46,14 +46,15 @@ export async function POST(req: NextRequest) {
   if (!Number.isSafeInteger(amt) || amt <= 0) return NextResponse.json({ error: "amountMinor must be positive" }, { status: 400 })
 
   const recipientId = user.role === "admin" && userId ? userId : user.id
-  if (!(await db.user.findFirst({ where: { id: recipientId, workspaceId: user.workspaceId, active: true } }))) return NextResponse.json({ error: "member not found" }, { status: 404 })
-  if (taskId && !(await db.task.findFirst({ where: { id: taskId, ownerId: user.id } }))) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!(await db.workspaceMembership.findFirst({ where: { userId: recipientId, workspaceId: user.workspaceId, user: { active: true } } }))) return NextResponse.json({ error: "member not found" }, { status: 404 })
+  if (taskId && !(await db.task.findFirst({ where: { id: taskId, ownerId: user.id, workspaceId: user.workspaceId } }))) return NextResponse.json({ error: "task not found" }, { status: 404 })
   // Preserve already accepted commands from the single-team release on retry.
-  const previous = businessKey ? await db.ledgerEntry.findUnique({ where: { businessKey } }) : null
-  const ownsPrevious = previous && (user.role === "admin" || previous.userId === user.id) && await db.user.findFirst({ where: { id: previous.userId, workspaceId: user.workspaceId } })
+  const previous = businessKey ? await db.ledgerEntry.findUnique({ where: { businessKey }, include: { projectScope: true } }) : null
+  const ownsPrevious = previous?.projectScope?.workspaceId === user.workspaceId && (user.role === "admin" || previous?.userId === user.id)
   const key = ownsPrevious ? businessKey : `manual:${user.workspaceId}:${user.id}:${businessKey || crypto.randomUUID()}`
   try {
     const entry = await postEntry({
+        workspaceId: user.workspaceId,
       userId: recipientId,
       kind,
       currency: currency || "RUB",

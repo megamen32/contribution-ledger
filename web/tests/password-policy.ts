@@ -66,6 +66,7 @@ if (!process.argv.includes("--unit")) {
     const legacyPassword = "Existing-Long-Password-123!"
     await db.workspace.upsert({where:{id:"legacy"},update:{},create:{id:"legacy",name:"Synthetic fixture project"}})
     const owner = await db.user.create({ data: { displayName: "Password test fixture", email: `${suffix}@test.invalid`, role: "admin", credential: { create: { login: `owner-${suffix}`, passwordHash: await hashPassword(legacyPassword) } } } })
+    await db.workspaceMembership.create({data:{workspaceId:owner.workspaceId,userId:owner.id,role:"admin"}})
     const invite = newInviteToken()
     await db.inviteToken.create({ data: { tokenHash: tokenHash(invite), createdById: owner.id, expiresAt: new Date(Date.now()+60000) } })
     const registration = { login: `member-${suffix}`, displayName: "Synthetic member", password: "1", invite }

@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       sessions: { orderBy: { startedAt: "desc" }, take: 50 },
     },
   })
-  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id || task.workspaceId !== user.workspaceId) return NextResponse.json({ error: "not found" }, { status: 404 })
   return NextResponse.json({ task })
 }
 
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const body = await req.json().catch(() => ({} as any))
   const task = await db.task.findUnique({ where: { id } })
-  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id || task.workspaceId !== user.workspaceId) return NextResponse.json({ error: "not found" }, { status: 404 })
   if (body.revision !== undefined && body.revision !== task.revision) {
     return NextResponse.json(
       { error: "revision mismatch", current: task },

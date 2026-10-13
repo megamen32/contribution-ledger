@@ -57,10 +57,10 @@ try {
   assert.equal((await (await rules.GET()).json()).rules.length, 1)
   assert.equal((await (await profiles.GET()).json()).profiles.length, 1)
   assert.deepEqual((await (await me.GET()).json()).members.map((u: any) => u.id), [b.id])
-  const task = await db.task.create({ data: { title: "A published task", ownerId: a.id, sharedWithTeam: true } })
+  const task = await db.task.create({ data: { title: "A published task", workspaceId:a.workspaceId, ownerId: a.id, sharedWithTeam: true } })
   const report = await db.reportVersion.create({ data: { taskId: task.id, version: 1, contentJson: "{}" } })
   const round = await db.assessmentRound.create({ data: { taskId: task.id, reportId: report.id, number: 1, packetJson: "{}", packetHash: "synthetic" } })
-  const job = await db.job.create({ data: { kind: "assess", businessKey: "job-a", actorId: a.id, state: "failed" } })
+  const job = await db.job.create({ data: { kind: "assess", workspaceId:a.workspaceId, businessKey: "job-a", actorId: a.id, state: "failed" } })
   current = a
   const posted = await ledger.POST(req({ kind: "cash_contribution", amountMinor: 10000, businessKey: "same-key" }))
   assert.equal(posted.status, 200)

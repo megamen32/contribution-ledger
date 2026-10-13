@@ -27,6 +27,7 @@ const POSITIVE_KINDS: LedgerKind[] = [
 ]
 
 export interface LedgerCommand {
+  workspaceId?: string
   userId: string
   kind: LedgerKind
   /** Positive amount in minor units. Signed internally (settlement/reversal become negative). */
@@ -87,15 +88,22 @@ export async function postEntry(cmd: LedgerCommand): Promise<LedgerEntry> {
     throw new LedgerValidationError("positive kinds cannot target an entry")
   }
 
-  const requestHash = digest(Object.fromEntries(Object.entries(cmd).filter(([, value]) => value !== undefined)))
+  // Keep old accepted-command hashes stable through the additive project upgrade.
+  const requestHash = digest(Object.fromEntries(Object.entries(cmd).filter(([key, value]) => key !== "workspaceId" && value !== undefined)))
 
   // Run inside a transaction. Prisma's $transaction with interactive mode.
   return await db.$transaction(async (tx) => {
+    const member = await tx.user.findUnique({ where: { id: cmd.userId } })
+    if (!member) throw new LedgerValidationError("member not found")
+    const workspaceId = cmd.workspaceId ?? member.workspaceId
+    if (cmd.workspaceId && !(await tx.workspaceMembership.findUnique({ where: { workspaceId_userId: { workspaceId, userId: cmd.userId } } }))) throw new LedgerValidationError("member not in project")
     // 1. idempotency check
     const existing = await tx.ledgerEntry.findUnique({
       where: { businessKey: cmd.businessKey },
+      include: { projectScope: true },
     })
     if (existing) {
+      if (existing.projectScope?.workspaceId !== workspaceId) throw new LedgerConflict("command belongs to another project")
       if (existing.requestHash !== requestHash) {
         throw new LedgerConflict(
           "same business key, different command",
@@ -110,8 +118,10 @@ export async function postEntry(cmd: LedgerCommand): Promise<LedgerEntry> {
     if (cmd.targetEntryId) {
       const target = await tx.ledgerEntry.findUnique({
         where: { id: cmd.targetEntryId },
+        include: { projectScope: true },
       })
       if (!target) throw new LedgerValidationError("target not found")
+      if (target.projectScope?.workspaceId !== workspaceId) throw new LedgerValidationError("target not found in project")
       if (target.userId !== cmd.userId || target.currency !== cmd.currency) {
         throw new LedgerValidationError("target has a different member or currency")
       }
@@ -176,6 +186,7 @@ export async function postEntry(cmd: LedgerCommand): Promise<LedgerEntry> {
     // 3. insert
     const data: Prisma.LedgerEntryCreateInput = {
       user: { connect: { id: cmd.userId } },
+      projectScope: { create: { workspaceId } },
       kind: cmd.kind,
       currency: cmd.currency,
       amountMinor: signedAmount,

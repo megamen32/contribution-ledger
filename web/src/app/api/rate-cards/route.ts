@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 100000000 || !["all","dev","research","design","ops","learning","sales","org"].includes(category)) {
     return NextResponse.json({ error: "Укажите положительную ставку в копейках и категорию работы" }, { status: 422 })
   }
-  const rate = await db.agreedLaborRate.create({ data: { userId: user.id, role: "agreed", category, currency: "RUB", ratePerHourMinor: amount } })
+  const rate = await db.agreedLaborRate.create({ data: { workspaceId: user.workspaceId, userId: user.id, role: "agreed", category, currency: "RUB", ratePerHourMinor: amount } })
   return NextResponse.json({ rate }, { status: 201 })
 }
 import { db } from "@/lib/db"
@@ -26,7 +26,7 @@ export async function GET() {
       orderBy: { version: "desc" },
     }),
     db.agreedLaborRate.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId, userId: user.id },
       include: { user: { select: { id: true, displayName: true, color: true } } },
       orderBy: { createdAt: "desc" },
     }),

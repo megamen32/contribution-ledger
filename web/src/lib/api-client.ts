@@ -1,4 +1,6 @@
 // Client-side API fetch helpers. All routes are relative (same origin).
+let activeProject: string | undefined
+export function setApiProject(projectId: string) { activeProject = projectId }
 export async function api<T = any>(
   path: string,
   init?: RequestInit & { json?: unknown },
@@ -8,6 +10,7 @@ export async function api<T = any>(
     ...rest,
     headers: {
       ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(activeProject && !["/api/projects/switch", "/api/account/invite/accept"].includes(path) ? { "X-Vklad-Project": activeProject } : {}),
       ...headers,
     },
     body: json !== undefined ? JSON.stringify(json) : (rest as any).body,

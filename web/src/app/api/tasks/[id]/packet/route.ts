@@ -1,3 +1,4 @@
+import { projectMembers } from "@/lib/project-membership"
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
@@ -17,9 +18,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       include: { reportVersions: { orderBy: { version: "desc" }, take: 1 } },
     }),
     db.rateCardVersion.findFirst({ where: { kind: "market", workspaceId: user.workspaceId }, orderBy: { version: "desc" } }),
-    db.user.findMany({ where: { active: true, workspaceId: user.workspaceId }, select: { displayName: true } }),
+    projectMembers(user.workspaceId),
   ])
-  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id || task.workspaceId !== user.workspaceId) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   const report = task.reportVersions[0]
   const marketRates: MarketRate[] = rateCardVersion

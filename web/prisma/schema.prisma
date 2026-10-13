@@ -23,6 +23,7 @@ model User {
   createdAt    DateTime @default(now())
 
   credential   UserCredential?
+  memberships  WorkspaceMembership[]
   invitesCreated InviteToken[] @relation("InviteCreator")
   sessions     Session[]
   tasksOwned   Task[]      @relation("TaskOwner")
@@ -38,6 +39,18 @@ model Workspace {
   id        String   @id @default(cuid())
   name      String
   createdAt DateTime @default(now())
+  memberships WorkspaceMembership[]
+}
+
+model WorkspaceMembership {
+  workspaceId String
+  userId      String
+  role        String   @default("member")
+  joinedAt    DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([workspaceId, userId])
+  @@index([userId])
 }
 
 model UserCredential {
@@ -68,6 +81,7 @@ model InviteToken {
   createdBy     User     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
   expiresAt     DateTime
   usedAt        DateTime?
+  usedById      String?
   createdAt     DateTime @default(now())
 
   @@index([expiresAt])
@@ -75,6 +89,7 @@ model InviteToken {
 
 model Session {
   id              String   @id @default(cuid())
+  workspaceId     String   @default("legacy")
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project         String
@@ -102,6 +117,7 @@ model Session {
 
 model Task {
   id                  String   @id @default(cuid())
+  workspaceId         String   @default("legacy")
   title               String
   description         String   @default("")
   ownerId             String
@@ -206,6 +222,7 @@ model JudgeRun {
 
 model LedgerEntry {
   id           String   @id @default(cuid())
+  projectScope LedgerProjectScope?
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind         String   // cash_contribution | unreimbursed_expense | labor | bonus | reimbursement | settlement | reversal
@@ -231,6 +248,14 @@ model LedgerEntry {
   @@index([kind])
 }
 
+// Project association is separate so migration never edits immutable posted entries.
+model LedgerProjectScope {
+  entryId     String @id
+  workspaceId String
+  entry       LedgerEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  @@index([workspaceId])
+}
+
 model RateCardVersion {
   id         String   @id @default(cuid())
   workspaceId String  @default("legacy")
@@ -245,6 +270,7 @@ model RateCardVersion {
 
 model AgreedLaborRate {
   id            String   @id @default(cuid())
+  workspaceId   String   @default("legacy")
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role          String   // e.g. "developer", "researcher", "designer"
@@ -271,6 +297,7 @@ model RuleVersion {
 
 model Job {
   id            String   @id @default(cuid())
+  workspaceId   String   @default("legacy")
   kind          String   // summarize | assess | ocr | finalize
   businessKey   String   @unique
   payloadJson   String   @default("{}")
@@ -290,6 +317,7 @@ model Job {
 
 model Change {
   id          String   @id @default(cuid())
+  workspaceId String   @default("legacy")
   entityType  String
   entityId    String
   actorId     String?

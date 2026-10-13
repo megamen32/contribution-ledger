@@ -1,3 +1,4 @@
+import { projectMembers } from "@/lib/project-membership"
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     where: { id },
     include: { reportVersions: { orderBy: { version: "desc" } }, owner: true },
   })
-  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id || task.workspaceId !== user.workspaceId) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   const body = await req.json().catch(() => ({} as any))
   const report = body.reportId
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const [rateCardVersion, profile, members] = await Promise.all([
     db.rateCardVersion.findFirst({ where: { kind: "market", workspaceId: user.workspaceId }, orderBy: { version: "desc" } }),
     db.modelProfile.findFirst({ where: { active: true, workspaceId: user.workspaceId } }),
-    db.user.findMany({ where: { active: true, workspaceId: user.workspaceId }, select: { displayName: true } }),
+    projectMembers(user.workspaceId),
   ])
 
   // build MarketRate[] from the stored rate card version
@@ -201,6 +202,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   // record a job for traceability
   await db.job.create({
     data: {
+      workspaceId: user.workspaceId,
       kind: "assess",
       businessKey: `task:${task.id}:round:${number}`,
       payloadJson: JSON.stringify({ taskId: task.id, roundId: round.id }),

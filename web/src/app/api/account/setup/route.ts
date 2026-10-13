@@ -25,10 +25,12 @@ export async function POST(req: NextRequest) {
       const claimed = await tx.ownerSetup.updateMany({ where: { id: "first-owner", tokenHash: invitation.tokenHash, usedAt: null, expiresAt: { gt: new Date() } }, data: { usedAt: new Date() } })
       if (claimed.count !== 1 || await tx.userCredential.count()) throw new Error("owner-exists")
       await tx.workspace.upsert({ where: { id: "legacy" }, update: {}, create: { id: "legacy", name: "Команда Вклада" } })
-      return tx.user.create({ data: {
+      const owner = await tx.user.create({ data: {
         displayName, email: `${crypto.randomUUID()}@vklad.invalid`, role: "admin",
         credential: { create: { login, passwordHash } },
       } })
+      await tx.workspaceMembership.create({ data: { userId: owner.id, workspaceId: owner.workspaceId, role: "admin" } })
+      return owner
     })
     return NextResponse.json({ user: { id: user.id, displayName: user.displayName } }, { status: 201 })
   } catch (error: any) {

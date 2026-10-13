@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const session = await db.session.findUnique({ where: { id } })
   if (!session) return NextResponse.json({ error: "not found" }, { status: 404 })
-  if (session.userId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (session.userId !== user.id || session.workspaceId !== user.workspaceId) return NextResponse.json({ error: "not found" }, { status: 404 })
 
   const now = new Date()
   let intervals: Interval[] = JSON.parse(session.intervalsJson || "[]")
@@ -131,11 +131,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       let rate: Awaited<ReturnType<typeof db.agreedLaborRate.findFirst>> = null
       if (task?.category) {
         rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" },
-          where: { userId: session.userId, category: task.category },
+          where: { workspaceId: user.workspaceId, userId: session.userId, category: task.category },
         })
       }
       if (!rate) {
-        rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { userId: session.userId } })
+        rate = await db.agreedLaborRate.findFirst({ orderBy: { effectiveFrom: "desc" }, where: { workspaceId: user.workspaceId, userId: session.userId } })
       }
       const rateMinor = rate?.ratePerHourMinor ?? 0
 
@@ -157,6 +157,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         const prevSessions = await db.session.findMany({
           where: {
             userId: session.userId,
+            workspaceId: user.workspaceId,
             status: "uploaded",
             id: { not: session.id },
             startedAt: { gte: startOfDay, lt: endOfDay },
@@ -170,6 +171,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
       if (laborMinor > 0) {
         await postEntry({
+        workspaceId: user.workspaceId,
           userId: session.userId,
           kind: "labor",
           currency: rate?.currency ?? "RUB",
@@ -201,6 +203,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     include: { task: true, user: { select: { id: true, displayName: true, color: true } } },
   })
   if (!session) return NextResponse.json({ error: "not found" }, { status: 404 })
-  if (session.userId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (session.userId !== user.id || session.workspaceId !== user.workspaceId) return NextResponse.json({ error: "not found" }, { status: 404 })
   return NextResponse.json({ session })
 }

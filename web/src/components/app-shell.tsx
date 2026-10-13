@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { api } from "@/lib/api-client"
+import { api, setApiProject } from "@/lib/api-client"
 import { UserSwitcher, type Member } from "@/components/user-switcher"
 import { PersonalView } from "@/components/views/personal-view"
 import { TasksView } from "@/components/views/tasks-view"
@@ -37,6 +37,10 @@ export function AppShell() {
   const [view, setView] = React.useState<ViewKey>("personal")
   const [bootLoading, setBootLoading] = React.useState(true)
   const [projectName, setProjectName] = React.useState("")
+  const [projects, setProjects] = React.useState<{ id: string; name: string; role: string }[]>([])
+  const [activeProject, setActiveProject] = React.useState("")
+  const [switching, setSwitching] = React.useState(false)
+  const [switchError, setSwitchError] = React.useState("")
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
@@ -46,11 +50,13 @@ export function AppShell() {
     let cancelled = false
     ;(async () => {
       try {
-        const data = await api<{ user: Member | null; members: Member[]; project: { name: string } | null }>("/api/me")
+        const data = await api<{ user: Member | null; members: Member[]; project: { id: string; name: string } | null; projects: { id: string; name: string; role: string }[] }>("/api/me")
         if (cancelled) return
         setMembers(data.members)
         setCurrent(data.user)
         setProjectName(data.project?.name || "Мой проект")
+        setProjects(data.projects)
+        if (data.project) { setActiveProject(data.project.id); setApiProject(data.project.id) }
       } catch (e) {
         console.error(e)
       } finally {
@@ -107,7 +113,7 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        {current && <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-semibold">{projectName}</h1>{current.role === "admin" && <a href="/account" className="text-sm text-primary hover:underline">Пригласить участника →</a>}</div>}
+        {current && <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-xl font-semibold">{projectName}</h1><label className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">Текущий проект<select aria-label="Текущий проект" className="max-w-full rounded-md border bg-background px-3 py-2 text-foreground" value={activeProject} disabled={switching} onChange={async e => { const projectId = e.target.value; setSwitching(true); setSwitchError(""); try { await api("/api/projects/switch", { method: "POST", json: { projectId } }); window.location.assign("/") } catch (error) { setSwitchError(error instanceof Error ? error.message : "Не удалось переключить проект"); setSwitching(false) } }}>{projects.map(p => <option key={p.id} value={p.id}>{p.name}{p.role === "admin" ? " · владелец" : " · участник"}</option>)}</select></label>{switchError && <p role="alert" className="mt-2 text-sm text-destructive">{switchError}</p>}</div>{current.role === "admin" && <a href="/account" className="text-sm text-primary hover:underline">Пригласить участника →</a>}</div>}
         {bootLoading ? (
           <BootSkeleton />
         ) : !current ? (

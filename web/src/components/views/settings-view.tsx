@@ -758,7 +758,7 @@ function ProfileCard({ profile }: { profile: ModelProfile }) {
                 : "bg-teal-500/15 text-teal-700 dark:text-teal-400",
             )}
           >
-            {profile.simulationMode ? "симуляция" : "2 модели OmniRoute"}
+            {profile.simulationMode ? "симуляция" : "2 модели · 3 оценки каждой"}
           </Badge>
         </div>
       </div>

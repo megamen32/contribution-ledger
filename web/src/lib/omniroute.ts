@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
+import { subscriptionComplete, subscriptionEnabled, SUBSCRIPTION_MODELS } from "./subscription"
 
-export const JUDGE_MODELS = ["glm-5.3", "gpt-6"]
+export const JUDGE_MODELS = subscriptionEnabled() ? SUBSCRIPTION_MODELS : ["glm-5.3", "gpt-6"]
 export const SUMMARY_MODEL = "minimax/MiniMax-M3"
 
 export function routerConfig() {
@@ -11,6 +12,7 @@ export function routerConfig() {
 }
 
 export async function complete(model: string, messages: { role: string; content: string }[]) {
+  if (subscriptionEnabled()) return subscriptionComplete(model, messages)
   const { base, key } = routerConfig()
   const requestId = crypto.randomUUID()
   const response = await fetch(`${base}/chat/completions`, {

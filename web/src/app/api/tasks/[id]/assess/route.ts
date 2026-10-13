@@ -8,7 +8,7 @@ import { makeBlindPacket, findKnownIdentifiers, redactPacket } from "@/lib/blind
 import { digest } from "@/lib/canonical"
 import type { BlindPacket, MarketRate, ReportContent } from "@/lib/contracts"
 
-// POST /api/tasks/{id}/assess — create a new assessment round and run the 3×3 consortium.
+// POST /api/tasks/{id}/assess — create a new assessment round and run two exact models, three samples each.
 // body: { reportId? }  (defaults to latest approved report)
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       rulesVersion: 1,
       rateCardVersion: rateCardVersion?.version ?? 1,
       modelProfileId: profile?.id,
-      modelConfigHash: digest(profile ? JSON.parse(profile.modelsJson) : {}),
+      modelConfigHash: digest(JUDGE_MODELS),
       status: "running",
       visualReviewRequired,
       simulationMode: false,
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   await db.task.update({ where: { id: task.id }, data: { activeAssessmentId: round.id, status: "assessing" } })
 
-  // create 9 slots queued
+  // Create six distinct slots.
   const slots: ReturnType<typeof db.judgeRun.create>[] = []
   for (const modelKey of JUDGE_MODELS) {
     for (let s = 1; s <= 3; s++) {
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       kind: "assess",
       businessKey: `task:${task.id}:round:${number}`,
       payloadJson: JSON.stringify({ taskId: task.id, roundId: round.id }),
-      state: "done",
+      state: status === "failed" ? "failed" : "done",
       actorId: user.id,
     },
   })

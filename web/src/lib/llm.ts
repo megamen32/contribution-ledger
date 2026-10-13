@@ -1,26 +1,7 @@
-// LLM helper for the 3×3 judge consortium.
-// Spec §5/§11: three DISTINCT model families × 3 runs = 9 evaluations.
-// In this web environment we have a single LLM endpoint (z-ai), so we SIMULATE the three
-// families with three distinct judge personas and temperature variation. This is labelled
-// honestly via ModelProfile.simulationMode=true. A real Ollama swap (qwen3+gemma3+mistral)
-// sets simulationMode=false and only this file's provider call changes.
-//
-// The aggregation logic is real (median-of-medians, majority vote) per spec §11.
-// JudgeAnswer is validated against BlindPacketSchema — model outputs that don't reference
-// a real rate_id get price_status: "no_price_data" (NOT zero rubles — spec §11).
-
+// Real model calls; assessment never changes the financial ledger.
 import { complete } from "./omniroute"
 import { JudgeAnswerSchema, validateAnswer, type BlindPacket, type JudgeAnswer, type MarketRate } from "./contracts"
 import { grossMinor } from "./money"
-
-const PERSONAS: Record<string, string> = {
-  "qwen3:8b":
-    "Ты — судья A (семейство Qwen). Внимательный к структуре задачи и полноте источников. Оцениваешь честно, без завышения.",
-  "gemma3:4b":
-    "Ты — судья B (семейство Gemma). Консервативный оценщик. Учитываешь ограничения и неопределённость; склонен к более узким диапазонам.",
-  "mistral:7b":
-    "Ты — судья C (семейство Mistral). Прагматичный оценщик. Учитываю типичное исполнение на рынке для компетентного специалиста.",
-}
 
 const SYSTEM_BASE = `Ты — независимый оценщик выполненной задачи. Ты НЕ видишь имя исполнителя, фактическое время, личную ставку, историю вкладов и деньги участника. Оценивай только по содержанию обезличенного пакета.
 
@@ -121,8 +102,8 @@ function derivePrice(seconds: number, row: MarketRate | undefined, bound: "low" 
 
 /**
  * Run a single judge slot. Returns the validated JudgeAnswer + derived prices.
- * modelKey determines the persona; sampleIndex (1..3) varies temperature slightly.
- * On parse/validation failure, returns a needs_information answer with no_price_data.
+ * Each slot calls its exact configured model and validates its response.
+ * Invalid responses fail the slot; no answer is fabricated.
  */
 export async function runJudgeSlot(
   modelKey: string,
@@ -157,7 +138,5 @@ export async function runJudgeSlot(
 
   return { answer, priceLow, priceHigh, raw, parseError, metadata: completion }
 }
-
-const PERSONA_FALLBACK = "Ты — независимый оценщик задачи."
 
 export { JUDGE_MODELS } from "./omniroute"

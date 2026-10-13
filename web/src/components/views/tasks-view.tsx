@@ -1247,10 +1247,10 @@ function AssessmentsTab({
           <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
           <div>
             <p className="font-medium">
-              Идёт оценка девятью судьями… ~20с
+              Идёт оценка задачи…
             </p>
             <p className="text-xs text-teal-700/80 dark:text-teal-300/80">
-              Запускаются 3 модели с 3 повторами каждая. Не закрывайте страницу.
+              Запускаются две модели с тремя повторами каждая. Результат появится после завершения.
             </p>
           </div>
         </div>

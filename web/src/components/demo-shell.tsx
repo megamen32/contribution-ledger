@@ -1,108 +1,67 @@
 "use client"
 
 import { useState } from "react"
-import { Scale, Download, ArrowRight } from "lucide-react"
+import { Scale, Download, RotateCcw, Briefcase, ListTodo, Users, Settings, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatMoney, grossMinor } from "@/lib/money"
+import { DEMO_MEMBERS, demoEntries, demoTasks, memberTotals, type DemoEntry, type DemoTask } from "@/lib/demo-data"
 
-type Entry = { title: string; amountMinor: number; kind: "work" | "cash" }
 const TABS = ["Моя работа", "Задачи", "Вклады команды", "Настройки"] as const
-
-// This sandbox has no network adapter or access to the team's ledger.
-// Each visitor's entries exist only in this component until reload.
+const ICONS = [Briefcase, ListTodo, Users, Settings]
+// Browser-only sandbox. Examples and changes never reach the real workspace API.
 export function DemoShell() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Моя работа")
-  const [entries, setEntries] = useState<Entry[]>([])
-  const [tasks, setTasks] = useState<{ title: string; done: boolean }[]>([])
+  const [entries, setEntries] = useState<DemoEntry[]>(demoEntries)
+  const [tasks, setTasks] = useState<DemoTask[]>(demoTasks)
+  const [selectedTask, setSelectedTask] = useState(0)
   const [title, setTitle] = useState("")
   const [hours, setHours] = useState("1")
-  const [rate, setRate] = useState("1000")
+  const [rate, setRate] = useState("1500")
   const [cash, setCash] = useState("1000")
   const [error, setError] = useState("")
-  const workTotal = entries.filter(e => e.kind === "work").reduce((sum, e) => sum + e.amountMinor, 0)
-  const cashTotal = entries.filter(e => e.kind === "cash").reduce((sum, e) => sum + e.amountMinor, 0)
-  const money = (minor: number) => formatMoney(minor, "RUB")
-
-  function add(kind: Entry["kind"]) {
-    if (!title.trim()) { setError("Укажите, что вы сделали или оплатили"); return }
-    const seconds = Math.round(Number(hours) * 3600)
-    const hourlyMinor = Math.round(Number(rate) * 100)
-    if (kind === "work" && (!Number.isSafeInteger(seconds) || !Number.isSafeInteger(hourlyMinor) || seconds <= 0 || hourlyMinor <= 0)) {
-      setError("Введите положительные часы и ставку"); return
-    }
-    const amountMinor = kind === "cash" ? Math.round(Number(cash) * 100) : grossMinor(seconds, hourlyMinor)
-    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0 || amountMinor > 100_000_000_00) {
-      setError("Введите положительные часы, ставку или сумму"); return
-    }
-    setEntries(previous => [...previous, { title: title.trim(), amountMinor, kind }])
-    setTitle("")
-    setError("")
+  const mine = memberTotals(entries,"you")
+  const workTotal = entries.filter(e=>e.kind==="work").reduce((s,e)=>s+e.amountMinor,0)
+  const cashTotal = entries.filter(e=>e.kind==="cash").reduce((s,e)=>s+e.amountMinor,0)
+  const money = (minor:number)=>formatMoney(minor,"RUB")
+  const selected = tasks[selectedTask]
+  function reset() { setEntries(demoEntries()); setTasks(demoTasks()); setTitle(""); setError(""); setRate("1500"); setHours("1"); setCash("1000"); setSelectedTask(0) }
+  function add(kind:DemoEntry["kind"]) {
+    if (!title.trim()) {setError("Укажите, что вы сделали или оплатили");return}
+    const seconds=Math.round(Number(hours)*3600), hourlyMinor=Math.round(Number(rate)*100)
+    if(kind==="work"&&(!Number.isSafeInteger(seconds)||!Number.isSafeInteger(hourlyMinor)||seconds<=0||hourlyMinor<=0)){setError("Введите положительные часы и ставку");return}
+    const amountMinor=kind==="cash"?Math.round(Number(cash)*100):grossMinor(seconds,hourlyMinor)
+    if(!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>100_000_000_00){setError("Введите положительные часы, ставку или сумму");return}
+    setEntries(previous=>[{title:title.trim(),amountMinor,kind,memberId:"you",detail:kind==="work"?`${hours} ч × ${rate} ₽/час`:"Денежный вклад"},...previous]);setTitle("");setError("")
   }
-
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6">
-          <a href="/" className="flex items-center gap-2 text-xl font-semibold"><Scale className="text-primary" />Вклад</a>
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">Демо без регистрации</span>
-          <div className="ml-auto flex flex-wrap items-center gap-4 text-sm">
-            <a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="inline-flex items-center gap-2 text-primary hover:underline"><Download className="h-4 w-4" />Скачать для macOS</a>
-            <a href="/login" className="hover:underline">Войти</a>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        <div className="max-w-2xl space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Попробуйте учёт вкладов команды</h1>
-          <p className="text-muted-foreground">Добавьте пробную работу или расходы и посмотрите, как складывается вклад. Всё в этом демо остаётся в вашей вкладке и сбрасывается при перезагрузке.</p>
-        </div>
-        <nav aria-label="Разделы демо" className="flex gap-2 overflow-x-auto border-b pb-3">
-          {TABS.map(item => <Button key={item} variant={tab === item ? "default" : "ghost"} className="shrink-0" onClick={() => { setTab(item); setError("") }}>{item}</Button>)}
-        </nav>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[["Труд", workTotal], ["Денежные вложения", cashTotal], ["Общий вклад", workTotal + cashTotal]].map(([label, value]) => (
-            <Card key={label}><CardHeader><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{money(Number(value))}</CardContent></Card>
-          ))}
-        </div>
-        {tab === "Моя работа" && <div className="grid gap-6 lg:grid-cols-2">
-          <Card><CardHeader><CardTitle>Добавить пробный вклад</CardTitle></CardHeader><CardContent className="space-y-4">
-            <label className="block space-y-2 text-sm">Что сделано или оплачено<Input value={title} maxLength={200} onChange={e => setTitle(e.target.value)} placeholder="Например, подготовка макета" /></label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block space-y-2 text-sm">Часы<Input type="number" min="0.01" step="0.25" value={hours} onChange={e => setHours(e.target.value)} /></label>
-              <label className="block space-y-2 text-sm">Ставка, ₽/час<Input type="number" min="1" value={rate} onChange={e => setRate(e.target.value)} /></label>
-            </div>
-            <Button onClick={() => add("work")}>Добавить работу</Button>
-            <div className="border-t pt-4"><label className="block space-y-2 text-sm">Денежный вклад, ₽<Input type="number" min="0.01" step="0.01" value={cash} onChange={e => setCash(e.target.value)} /></label><Button variant="outline" className="mt-3" onClick={() => add("cash")}>Добавить деньги</Button></div>
-            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          </CardContent></Card>
-          <Card><CardHeader><CardTitle>История пробных вкладов</CardTitle></CardHeader><CardContent>
-            {entries.length === 0 ? <p className="text-muted-foreground">Здесь появятся ваши пробные записи. Начните с одной работы.</p> : <ul className="divide-y">{entries.map((entry, i) => <li key={i} className="flex justify-between gap-4 py-3"><div><p>{entry.title}</p><p className="text-sm text-muted-foreground">{entry.kind === "work" ? "Труд" : "Деньги"}</p></div><strong className="shrink-0">{money(entry.amountMinor)}</strong></li>)}</ul>}
-          </CardContent></Card>
-        </div>}
-        {tab === "Задачи" && <Card><CardHeader><CardTitle>Попробуйте список задач</CardTitle></CardHeader><CardContent className="space-y-4">
-          <form className="flex gap-3" onSubmit={e => { e.preventDefault(); if (title.trim()) { setTasks(previous => [...previous, { title: title.trim(), done: false }]); setTitle("") } }}><Input aria-label="Название задачи" placeholder="Название задачи" value={title} maxLength={200} onChange={e => setTitle(e.target.value)} /><Button type="submit">Добавить задачу</Button></form>
-          {tasks.length === 0 && <p className="text-muted-foreground">Создайте задачу, затем отметьте её выполненной.</p>}
-          <ul className="space-y-3">{tasks.map((task, i) => <li key={i}><label className="flex items-center gap-3"><input type="checkbox" checked={task.done} onChange={() => setTasks(previous => previous.map((item, index) => index === i ? { ...item, done: !item.done } : item))} /><span className={task.done ? "line-through text-muted-foreground" : ""}>{task.title}</span></label></li>)}</ul>
-          <p className="text-sm text-muted-foreground">Оценка ИИ и запись экрана доступны в настроенном рабочем кабинете. В демо они не запускаются.</p>
-        </CardContent></Card>}
-        {tab === "Вклады команды" && <Card><CardHeader><CardTitle>Как считается вклад</CardTitle></CardHeader><CardContent className="space-y-4">
-          <p>Пробный участник: труд {money(workTotal)} + денежные вложения {money(cashTotal)} = <strong>{money(workTotal + cashTotal)}</strong>.</p>
-          <p className="text-muted-foreground">Труд учитывается по согласованной ставке. Это сумма учтённого вклада, а не доля в компании. Данные реальной команды здесь не отображаются.</p>
-          <Button onClick={() => setTab("Моя работа")}>Добавить ещё вклад</Button>
-        </CardContent></Card>}
-        {tab === "Настройки" && <Card><CardHeader><CardTitle>Настройки демо</CardTitle></CardHeader><CardContent className="max-w-lg space-y-4">
-          <label className="block space-y-2 text-sm">Пробная ставка, ₽/час<Input type="number" min="1" value={rate} onChange={e => setRate(e.target.value)} /></label>
-          <p className="text-sm text-muted-foreground">Новая ставка применяется к следующим записям. Уже добавленная работа сохраняет свою сумму.</p>
-          <Button variant="outline" onClick={() => { setEntries([]); setTasks([]); setTitle(""); setError(""); setRate("1000"); setHours("1"); setCash("1000") }}>Сбросить демо</Button>
-        </CardContent></Card>}
-        <section className="flex flex-col justify-between gap-4 rounded-xl border bg-muted/30 p-6 sm:flex-row sm:items-center">
-          <div><h2 className="text-lg font-semibold">Готовы вести настоящие записи?</h2><p className="mt-1 text-sm text-muted-foreground">Создайте свой проект и пригласите команду. Пробные записи в кабинет не переносятся.</p></div>
-          <a href="/login?register=1" className="inline-flex shrink-0 items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Создать аккаунт<ArrowRight className="h-4 w-4" /></a>
-        </section>
-        <footer className="flex flex-wrap gap-4 text-sm text-muted-foreground"><span>macOS: Apple Silicon · версия 0.3.0</span><a className="hover:underline" href="/downloads/">Все загрузки</a><a className="hover:underline" href="https://github.com/megamen32/contribution-ledger">Исходный код на GitHub</a></footer>
-      </main>
-    </div>
-  )
+  return <div className="min-h-screen bg-background text-foreground">
+    <header className="border-b"><div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
+      <a href="/" className="flex items-center gap-2 font-semibold"><Scale className="text-primary"/>Вклад</a>
+      <nav aria-label="Разделы демо" className="order-3 flex w-full gap-1 overflow-x-auto lg:order-none lg:w-auto">{TABS.map((item,i)=>{const Icon=ICONS[i];return <Button key={item} variant={tab===item?"secondary":"ghost"} className="shrink-0 gap-2" onClick={()=>{setTab(item);setError("")}}><Icon className="h-4 w-4"/>{item}</Button>})}</nav>
+      <div className="ml-auto flex items-center gap-3 text-sm"><span className="rounded-full bg-primary/10 px-3 py-1 text-primary">Демо</span><a href="/login" className="hover:underline">Войти</a><a href="/login?register=1" className="rounded-md bg-primary px-3 py-2 text-primary-foreground">Создать аккаунт</a></div>
+    </div></header>
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-xl font-semibold">Запуск сервиса</h1><p className="mt-1 text-sm text-muted-foreground">Демонстрационный проект · 3 участника · вы владелец</p></div><Button variant="outline" size="sm" className="gap-2" onClick={reset}><RotateCcw className="h-4 w-4"/>Сбросить демо</Button></div>
+      <p className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">Кабинет заполнен примерами. Меняйте записи и задачи — изменения останутся в этой вкладке. Для своей команды создайте аккаунт.</p>
+      <div className="grid gap-4 sm:grid-cols-3">{[[tab==="Вклады команды"?"Труд команды":"Ваш труд",tab==="Вклады команды"?workTotal:mine.work],[tab==="Вклады команды"?"Деньги команды":"Ваши вложения",tab==="Вклады команды"?cashTotal:mine.cash],[tab==="Вклады команды"?"Общий вклад команды":"Ваш общий вклад",tab==="Вклады команды"?workTotal+cashTotal:mine.work+mine.cash]].map(([label,value])=><Card key={label}><CardHeader><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="text-2xl font-semibold sm:text-3xl">{money(Number(value))}</CardContent></Card>)}</div>
+      {tab==="Моя работа"&&<div className="grid gap-6 lg:grid-cols-2">
+        <Card><CardHeader><CardTitle>Добавить работу или расходы</CardTitle></CardHeader><CardContent className="space-y-4">
+          <label className="block space-y-2 text-sm">Что сделано или оплачено<Input value={title} maxLength={200} onChange={e=>setTitle(e.target.value)} placeholder="Например, проверка формы"/></label>
+          <div className="grid grid-cols-2 gap-3"><label className="block space-y-2 text-sm">Часы<Input type="number" min="0.01" step="0.25" value={hours} onChange={e=>setHours(e.target.value)}/></label><label className="block space-y-2 text-sm">Ставка, ₽/час<Input type="number" min="1" value={rate} onChange={e=>setRate(e.target.value)}/></label></div>
+          <Button onClick={()=>add("work")}>Добавить работу</Button>
+          <div className="border-t pt-4"><label className="block space-y-2 text-sm">Денежный вклад, ₽<Input type="number" min="0.01" step="0.01" value={cash} onChange={e=>setCash(e.target.value)}/></label><Button variant="outline" className="mt-3" onClick={()=>add("cash")}>Добавить деньги</Button></div>
+          {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
+        </CardContent></Card>
+        <Card><CardHeader><CardTitle>Ваша история вкладов</CardTitle></CardHeader><CardContent><ul className="divide-y">{entries.filter(e=>e.memberId==="you").map((entry,i)=><li key={i} className="flex justify-between gap-4 py-3"><div><p>{entry.title}</p><p className="mt-1 text-sm text-muted-foreground">{entry.detail}</p></div><strong className="shrink-0">{money(entry.amountMinor)}</strong></li>)}</ul><div className="mt-5 rounded-lg bg-muted/40 p-4 text-sm"><p className="font-medium">Последняя рабочая сессия</p><p className="mt-2 text-muted-foreground">Форма регистрации · 6 часов · завершена</p><p className="mt-1 text-muted-foreground">Отчёт сохранён в задаче.</p><Button variant="link" className="px-0" onClick={()=>{setSelectedTask(0);setTab("Задачи")}}>Открыть задачу</Button></div></CardContent></Card>
+      </div>}
+      {tab==="Задачи"&&<div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+        <Card><CardHeader><CardTitle>Задачи · {tasks.length}</CardTitle></CardHeader><CardContent className="space-y-4"><form className="flex gap-2" onSubmit={e=>{e.preventDefault();if(title.trim()){setTasks(previous=>[...previous,{title:title.trim(),done:false,description:"Новая задача демо",owner:"Вы",report:"Отчёта пока нет."}]);setSelectedTask(tasks.length);setTitle("")}}}><Input aria-label="Название задачи" placeholder="Название задачи" value={title} maxLength={200} onChange={e=>setTitle(e.target.value)}/><Button type="submit">Добавить задачу</Button></form><ul className="space-y-2">{tasks.map((task,i)=><li key={i}><button className={`w-full rounded-lg border p-3 text-left ${selectedTask===i?"border-primary bg-primary/5":""}`} onClick={()=>setSelectedTask(i)}><span className="block font-medium">{task.title}</span><span className="mt-1 block text-sm text-muted-foreground">{task.owner} · {task.done?"Выполнена":"В работе"}</span></button></li>)}</ul></CardContent></Card>
+        {selected&&<Card><CardHeader><CardTitle>{selected.title}</CardTitle></CardHeader><CardContent className="space-y-5"><p>{selected.description}</p><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected.done} onChange={()=>setTasks(previous=>previous.map((task,i)=>i===selectedTask?{...task,done:!task.done}:task))}/>Задача выполнена</label><div className="rounded-lg border p-4"><h2 className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-primary"/>Отчёт о работе</h2><p className="mt-3 text-sm text-muted-foreground">{selected.report}</p></div><p className="text-sm text-muted-foreground">В рабочем кабинете отчёт можно отправить на оценку ИИ. В демо платные запросы и запись экрана не запускаются.</p></CardContent></Card>}
+      </div>}
+      {tab==="Вклады команды"&&<Card><CardHeader><CardTitle>Вклады участников</CardTitle></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b text-muted-foreground"><tr><th className="py-3">Участник</th><th className="px-3">Труд</th><th className="px-3">Деньги</th><th className="text-right">Итого</th></tr></thead><tbody>{DEMO_MEMBERS.map(member=>{const totals=memberTotals(entries,member.id);return <tr key={member.id} className="border-b last:border-0"><td className="py-4"><p className="font-medium">{member.name}</p><p className="text-xs text-muted-foreground">{member.role}</p></td><td className="whitespace-nowrap px-3">{money(totals.work)}</td><td className="whitespace-nowrap px-3">{money(totals.cash)}</td><td className="whitespace-nowrap text-right font-semibold">{money(totals.work+totals.cash)}</td></tr>})}</tbody></table></div><p className="mt-5 text-sm text-muted-foreground">Вклад = труд по согласованной ставке + денежные вложения. Это учтённая сумма, а не доля в компании. Все участники и записи здесь вымышлены.</p></CardContent></Card>}
+      {tab==="Настройки"&&<Card><CardHeader><CardTitle>Правила проекта</CardTitle></CardHeader><CardContent className="max-w-xl space-y-4"><label className="block space-y-2 text-sm">Пробная ставка, ₽/час<Input type="number" min="1" value={rate} onChange={e=>setRate(e.target.value)}/></label><p className="text-sm text-muted-foreground">Новая ставка применяется к следующим записям. Уже добавленный труд сохраняет сумму. Подтверждённый труд учитывается по ставке независимо от оценки результата ИИ.</p><p className="text-sm text-muted-foreground">В своём проекте вы сможете настроить ставки, пригласить участников и хранить настоящие записи.</p></CardContent></Card>}
+      <footer className="flex flex-wrap items-center gap-4 border-t pt-5 text-sm text-muted-foreground"><a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="inline-flex items-center gap-2 hover:text-foreground"><Download className="h-4 w-4"/>Скачать для macOS</a><a href="/downloads/" className="hover:underline">Все загрузки</a><a href="https://github.com/megamen32/contribution-ledger" className="hover:underline">Исходный код на GitHub</a><a href="/login?register=1" className="ml-auto text-primary hover:underline">Создать свой проект →</a></footer>
+    </main>
+  </div>
 }

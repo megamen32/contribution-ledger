@@ -3,13 +3,13 @@
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Попробовать учёт вкладов до регистрации.
-**Current focus:** Участие в нескольких проектах и favicon
+**Current focus:** Заполненный демо-кабинет и реальные оценки по подпискам
 
 ## Current Position
 Phase: 1 of 1 (Открытое демо и публикация)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-10-13 — README, screenshots, описание и сайт опубликованы и проверены на GitHub.
+Last activity: 2026-10-13 — демо-кабинет и реальные ответы GLM/MiniMax проверены на публичном сайте.
 Progress: 100%
 
 ## Accumulated Context
@@ -36,3 +36,5 @@ Resume file: None
 | 261013-65i | Существующий аккаунт принимает приглашения, переключение проектов и favicon | 2026-10-13 | Verified | quick/261013-65i-accept-invitations-with-existing-account/ |
 
 | 261013-6xu | Русский README со скриншотами, описание и сайт в GitHub About | 2026-10-13 | Verified | quick/261013-6xu-russian-readme-with-public-demo-screensh/ |
+
+| 261013-720 | Заполненный демо-кабинет и реальные GLM/MiniMax по подпискам | 2026-10-13 | Verified (partial model results explicit) | quick/261013-720-seeded-demo-cabinet-and-real-subscriptio/ |

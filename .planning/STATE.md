@@ -9,7 +9,7 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 Phase: 1 of 1 (Открытое демо и публикация)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-10-13 — существующий аккаунт принимает приглашение, переключает проекты; favicon проверен на публичном сайте.
+Last activity: 2026-10-13 — README, screenshots, описание и сайт опубликованы и проверены на GitHub.
 Progress: 100%
 
 ## Accumulated Context
@@ -34,3 +34,5 @@ Resume file: None
 | 261013-5f9 | Самостоятельная регистрация, проекты и приглашения | 2026-10-13 | Verified | quick/261013-5f9-open-signup-with-isolated-projects-and-t/ |
 
 | 261013-65i | Существующий аккаунт принимает приглашения, переключение проектов и favicon | 2026-10-13 | Verified | quick/261013-65i-accept-invitations-with-existing-account/ |
+
+| 261013-6xu | Русский README со скриншотами, описание и сайт в GitHub About | 2026-10-13 | Verified | quick/261013-6xu-russian-readme-with-public-demo-screensh/ |

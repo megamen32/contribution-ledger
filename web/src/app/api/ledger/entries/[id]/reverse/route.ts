@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const { note } = await req.json().catch(() => ({ note: "Корректировка" }))
 
-  const original = await db.ledgerEntry.findUnique({ where: { id } })
+  const original = await db.ledgerEntry.findUnique({ where: { id, user: { workspaceId: user.workspaceId }, ...(user.role === "admin" ? {} : { userId: user.id }) } })
   if (!original) return NextResponse.json({ error: "entry not found" }, { status: 404 })
 
   try {

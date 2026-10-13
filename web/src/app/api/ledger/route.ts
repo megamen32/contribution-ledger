@@ -45,10 +45,16 @@ export async function POST(req: NextRequest) {
   const amt = Number(amountMinor)
   if (!Number.isSafeInteger(amt) || amt <= 0) return NextResponse.json({ error: "amountMinor must be positive" }, { status: 400 })
 
-  const key = businessKey || `manual:${user.id}:${crypto.randomUUID()}`
+  const recipientId = user.role === "admin" && userId ? userId : user.id
+  if (!(await db.user.findFirst({ where: { id: recipientId, workspaceId: user.workspaceId, active: true } }))) return NextResponse.json({ error: "member not found" }, { status: 404 })
+  if (taskId && !(await db.task.findFirst({ where: { id: taskId, ownerId: user.id } }))) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  // Preserve already accepted commands from the single-team release on retry.
+  const previous = businessKey ? await db.ledgerEntry.findUnique({ where: { businessKey } }) : null
+  const ownsPrevious = previous && (user.role === "admin" || previous.userId === user.id) && await db.user.findFirst({ where: { id: previous.userId, workspaceId: user.workspaceId } })
+  const key = ownsPrevious ? businessKey : `manual:${user.workspaceId}:${user.id}:${businessKey || crypto.randomUUID()}`
   try {
     const entry = await postEntry({
-      userId: user.role === "admin" && userId ? userId : user.id,
+      userId: recipientId,
       kind,
       currency: currency || "RUB",
       amountMinor: Math.round(amt),

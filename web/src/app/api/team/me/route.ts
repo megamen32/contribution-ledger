@@ -50,7 +50,7 @@ export async function GET() {
 
   // total team contribution for share calculation
   const allEntries = await db.ledgerEntry.findMany({
-    where: { status: "confirmed" },
+    where: { status: "confirmed", user: { workspaceId: user.workspaceId } },
     select: { userId: true, kind: true, amountMinor: true },
   })
   const teamByUser: Record<string, number> = {}

@@ -13,6 +13,7 @@ datasource db {
 
 model User {
   id           String   @id @default(cuid())
+  workspaceId  String   @default("legacy")
   displayName  String
   email        String   @unique
   timezone     String   @default("Europe/Moscow")
@@ -29,6 +30,14 @@ model User {
   agreedRates  AgreedLaborRate[]
   jobs         Job[]       @relation("JobActor")
   changes      Change[]
+  @@index([workspaceId])
+}
+
+// Each account belongs to one project. Existing accounts stay in the legacy project.
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
 }
 
 model UserCredential {
@@ -53,6 +62,7 @@ model OwnerSetup {
 
 model InviteToken {
   id            String   @id @default(cuid())
+  workspaceId   String   @default("legacy")
   tokenHash     String   @unique
   createdById   String
   createdBy     User     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
@@ -223,12 +233,14 @@ model LedgerEntry {
 
 model RateCardVersion {
   id         String   @id @default(cuid())
-  version    Int      @unique
+  workspaceId String  @default("legacy")
+  version    Int
   // JSON: {rates:[{id, role, qualification, market, currency, priceType, low, high, source, sourceDate, checkedAt}], agreedAt}
   contentJson String
   kind       String   @default("market") // market | agreed
   agreedAt   DateTime @default(now())
   createdAt  DateTime @default(now())
+  @@unique([workspaceId, version])
 }
 
 model AgreedLaborRate {
@@ -248,11 +260,13 @@ model AgreedLaborRate {
 
 model RuleVersion {
   id              String   @id @default(cuid())
-  version         Int      @unique
+  workspaceId     String   @default("legacy")
+  version         Int
   contentJson     String   // {summary, rounding, formulaText, ...}
   acceptedByJson  String   @default("[]")
   effectiveFrom   DateTime @default(now())
   createdAt       DateTime @default(now())
+  @@unique([workspaceId, version])
 }
 
 model Job {
@@ -291,7 +305,8 @@ model Change {
 // In this environment simulationMode=true (z-ai personas); a real Ollama swap sets it false.
 model ModelProfile {
   id              String   @id @default(cuid())
-  profileId       String   @unique
+  workspaceId     String   @default("legacy")
+  profileId       String
   // JSON: [{key, family, tag, digest, runtime_version, quantization}]
   modelsJson      String
   // JSON: [int, int, int] — 3 distinct sampling seeds
@@ -304,4 +319,5 @@ model ModelProfile {
   createdAt       DateTime @default(now())
 
   @@index([active])
+  @@unique([workspaceId, profileId])
 }

@@ -2,11 +2,12 @@
 import { PrismaClient } from "@prisma/client"
 const db = new PrismaClient()
 async function main() {
-  await db.ruleVersion.upsert({ where: { version: 1 }, update: {}, create: {
+  await db.workspace.upsert({where:{id:"legacy"},update:{},create:{id:"legacy",name:"Команда Вклада"}})
+  await db.ruleVersion.upsert({ where: { workspaceId_version: { workspaceId: "legacy", version: 1 } }, update: {}, create: {
     version: 1,
     contentJson: JSON.stringify({summary:"Деньги и подтверждённый труд учитываются отдельно. Старания включены по умолчанию.", formulaText:"Неоплаченные часы × согласованная ставка + денежные вложения − выплаты", rounding:"Деньги хранятся в копейках", effortCredit:true}),
   } })
-  await db.modelProfile.upsert({where:{profileId:"omniroute-v1"}, update:{}, create:{
+  await db.modelProfile.upsert({where:{workspaceId_profileId:{workspaceId:"legacy",profileId:"omniroute-v1"}}, update:{}, create:{
     profileId:"omniroute-v1", simulationMode:false,
     modelsJson:JSON.stringify([{key:"glm-5.3",family:"GLM",tag:"glm-5.3"},{key:"gpt-6",family:"GPT",tag:"gpt-6"}]),
     seedsJson:"[1,2,3]", samplesPerModel:3,

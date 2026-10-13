@@ -7,5 +7,5 @@ export async function getCurrentUser() {
   const uid = (session?.user as any)?.id
   if (!uid) return null
   const user = await db.user.findUnique({ where: { id: String(uid) } })
-  return user && user.active ? user : null
+  return user && user.active ? { ...user, project: await db.workspace.findUnique({ where: { id: user.workspaceId }, select: { id: true, name: true } }) } : null
 }

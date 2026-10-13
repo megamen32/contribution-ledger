@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const scope = req.nextUrl.searchParams.get("scope") ?? "mine"
-  const where = scope === "all" ? { status: { in: ["uploaded", "stopped"] } } : { userId: user.id }
+  const where = { userId: user.id }
   const sessions = await db.session.findMany({
     where,
     orderBy: { startedAt: "desc" },
@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const { project, taskId, note } = await req.json().catch(() => ({} as any))
   if (!project) return NextResponse.json({ error: "project required" }, { status: 400 })
+
+  if (taskId && !(await db.task.findFirst({ where: { id: taskId, ownerId: user.id } }))) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   // invariant: one active session per user per device
   const active = await db.session.findFirst({

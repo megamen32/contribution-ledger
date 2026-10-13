@@ -10,13 +10,13 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
   const users = await db.user.findMany({
-    where: { active: true },
+    where: { active: true, workspaceId: user.workspaceId },
     select: { id: true, displayName: true, color: true, role: true },
     orderBy: { displayName: "asc" },
   })
 
   const entries = await db.ledgerEntry.findMany({
-    where: { status: "confirmed" },
+    where: { status: "confirmed", user: { workspaceId: user.workspaceId } },
     select: {
       id: true,
       userId: true,
@@ -84,7 +84,7 @@ export async function GET() {
 
   // Shared board contains only explicitly published task cards. Detailed activity remains private.
   const tasks = await db.task.findMany({
-    where: { sharedWithTeam: true },
+    where: { sharedWithTeam: true, owner: { workspaceId: user.workspaceId } },
     select: { id: true, title: true, status: true, category: true, complexity: true, ownerId: true, updatedAt: true, owner: { select: { id: true, displayName: true, color: true } } },
     orderBy: { updatedAt: "desc" }, take: 100,
   })

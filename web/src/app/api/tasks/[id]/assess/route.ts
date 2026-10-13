@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     where: { id },
     include: { reportVersions: { orderBy: { version: "desc" } }, owner: true },
   })
-  if (!task) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   const body = await req.json().catch(() => ({} as any))
   const report = body.reportId
@@ -33,9 +33,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   // fetch latest market rate card + active model profile
   const [rateCardVersion, profile, members] = await Promise.all([
-    db.rateCardVersion.findFirst({ where: { kind: "market" }, orderBy: { version: "desc" } }),
-    db.modelProfile.findFirst({ where: { active: true } }),
-    db.user.findMany({ where: { active: true }, select: { displayName: true } }),
+    db.rateCardVersion.findFirst({ where: { kind: "market", workspaceId: user.workspaceId }, orderBy: { version: "desc" } }),
+    db.modelProfile.findFirst({ where: { active: true, workspaceId: user.workspaceId } }),
+    db.user.findMany({ where: { active: true, workspaceId: user.workspaceId }, select: { displayName: true } }),
   ])
 
   // build MarketRate[] from the stored rate card version

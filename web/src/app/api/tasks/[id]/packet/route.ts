@@ -16,10 +16,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       where: { id },
       include: { reportVersions: { orderBy: { version: "desc" }, take: 1 } },
     }),
-    db.rateCardVersion.findFirst({ where: { kind: "market" }, orderBy: { version: "desc" } }),
-    db.user.findMany({ where: { active: true }, select: { displayName: true } }),
+    db.rateCardVersion.findFirst({ where: { kind: "market", workspaceId: user.workspaceId }, orderBy: { version: "desc" } }),
+    db.user.findMany({ where: { active: true, workspaceId: user.workspaceId }, select: { displayName: true } }),
   ])
-  if (!task) return NextResponse.json({ error: "task not found" }, { status: 404 })
+  if (!task || task.ownerId !== user.id) return NextResponse.json({ error: "task not found" }, { status: 404 })
 
   const report = task.reportVersions[0]
   const marketRates: MarketRate[] = rateCardVersion

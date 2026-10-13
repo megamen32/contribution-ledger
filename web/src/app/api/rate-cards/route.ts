@@ -22,7 +22,7 @@ export async function GET() {
 
   const [market, agreed] = await Promise.all([
     db.rateCardVersion.findMany({
-      where: { kind: "market" },
+      where: { kind: "market", workspaceId: user.workspaceId },
       orderBy: { version: "desc" },
     }),
     db.agreedLaborRate.findMany({

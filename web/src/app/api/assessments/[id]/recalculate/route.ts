@@ -10,7 +10,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
   const round = await db.assessmentRound.findUnique({
-    where: { id },
+    where: { id, task: { ownerId: user.id } },
     include: { judgeRuns: true },
   })
   if (!round) return NextResponse.json({ error: "not found" }, { status: 404 })
@@ -24,7 +24,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const agg = aggregateConsortium(responses, round.visualReviewRequired)
   const updated = await db.assessmentRound.update({
-    where: { id },
+    where: { id, task: { ownerId: user.id } },
     data: { aggregateJson: JSON.stringify(agg) },
   })
   return NextResponse.json({ round: updated, aggregate: agg })

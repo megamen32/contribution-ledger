@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth"
 export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
-  const rules = await db.ruleVersion.findMany({ orderBy: { version: "desc" } })
+  const rules = await db.ruleVersion.findMany({ where: { workspaceId: user.workspaceId }, orderBy: { version: "desc" } })
   return NextResponse.json({
     rules: rules.map((r) => ({
       ...r,

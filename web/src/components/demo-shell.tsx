@@ -98,7 +98,7 @@ export function DemoShell() {
           <Button variant="outline" onClick={() => { setEntries([]); setTasks([]); setTitle(""); setError(""); setRate("1000"); setHours("1"); setCash("1000") }}>Сбросить демо</Button>
         </CardContent></Card>}
         <section className="flex flex-col justify-between gap-4 rounded-xl border bg-muted/30 p-6 sm:flex-row sm:items-center">
-          <div><h2 className="text-lg font-semibold">Готовы вести настоящие записи?</h2><p className="mt-1 text-sm text-muted-foreground">Создайте аккаунт по приглашению команды. Пробные записи в кабинет не переносятся.</p></div>
+          <div><h2 className="text-lg font-semibold">Готовы вести настоящие записи?</h2><p className="mt-1 text-sm text-muted-foreground">Создайте свой проект и пригласите команду. Пробные записи в кабинет не переносятся.</p></div>
           <a href="/login?register=1" className="inline-flex shrink-0 items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Создать аккаунт<ArrowRight className="h-4 w-4" /></a>
         </section>
         <footer className="flex flex-wrap gap-4 text-sm text-muted-foreground"><span>macOS: Apple Silicon · версия 0.3.0</span><a className="hover:underline" href="/downloads/">Все загрузки</a><a className="hover:underline" href="https://github.com/megamen32/contribution-ledger">Исходный код на GitHub</a></footer>

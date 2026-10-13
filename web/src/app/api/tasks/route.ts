@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
   const scope = sp.get("scope") ?? "mine"
   const status = sp.get("status")
-  const where: any = scope === "team" ? { sharedWithTeam: true } : { ownerId: user.id }
+  const where: any = scope === "team" ? { sharedWithTeam: true, owner: { workspaceId: user.workspaceId } } : { ownerId: user.id }
   if (status) where.status = status
 
   const tasks = await db.task.findMany({

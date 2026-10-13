@@ -13,6 +13,7 @@ export default function Login() {
   const [register, setRegister] = useState(false)
   const [login, setLogin] = useState("")
   const [name, setName] = useState("")
+  const [projectName, setProjectName] = useState("Мой проект")
   const [password, setPassword] = useState("")
   const [repeat, setRepeat] = useState("")
   const [error, setError] = useState("")
@@ -46,7 +47,7 @@ export default function Login() {
     try {
       if (register) {
         if (password !== repeat) throw new Error("Пароли не совпадают")
-        await api(ownerSetup ? "/api/account/setup" : "/api/account/register", { method: "POST", json: { login, displayName: name, password, invite } })
+        await api(ownerSetup ? "/api/account/setup" : "/api/account/register", { method: "POST", json: { login, displayName: name, password, invite, projectName } })
         // Registration has consumed the invitation even if the following sign-in fails.
         setRegister(false)
         setOwnerSetup(false)
@@ -71,12 +72,14 @@ export default function Login() {
         <p className="mt-4 text-sm text-muted-foreground"><a href="/demo" className="text-primary hover:underline">Попробовать демо без регистрации →</a></p>
 
         <form onSubmit={submit} className="mt-10 space-y-5">
+          {register && <p className="text-sm text-muted-foreground">{hasInvitationLink ? "Вы присоединитесь к проекту по приглашению." : "Создайте свой проект и пригласите в него команду."}</p>}
           {register && (
             <label className="block space-y-2 text-sm font-medium">
               Имя
               <Input required maxLength={100} autoComplete="name" value={name} onChange={event => setName(event.target.value)} />
             </label>
           )}
+          {register && !hasInvitationLink && <label className="block space-y-2 text-sm font-medium">Название проекта<Input required maxLength={100} value={projectName} onChange={event => setProjectName(event.target.value)} /></label>}
 
           <label className="block space-y-2 text-sm font-medium">
             Логин
@@ -94,12 +97,6 @@ export default function Login() {
                 Ещё раз
                 <Input type="password" required maxLength={128} autoComplete="new-password" value={repeat} onChange={event => setRepeat(event.target.value)} />
               </label>
-              {!hasInvitationLink && (
-                <label className="block space-y-2 text-sm font-medium">
-                  Приглашение
-                  <Input required maxLength={64} value={invite} onChange={event => setInvite(event.target.value.trim())} />
-                </label>
-              )}
             </>
           )}
 
@@ -116,6 +113,8 @@ export default function Login() {
           </button>
           <a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="text-muted-foreground hover:text-foreground hover:underline">Скачать для macOS</a>
         </div>
+        {register && hasInvitationLink && <button className="mt-4 text-sm text-primary hover:underline" type="button" onClick={() => { setInvite(""); setOwnerSetup(false); setHasInvitationLink(false); setError(""); try { sessionStorage.removeItem(REGISTRATION_LINK_KEY) } catch {} }}>Создать свой проект вместо вступления</button>}
+        <footer className="mt-8 text-sm text-muted-foreground"><a href="https://github.com/megamen32/contribution-ledger" className="hover:underline">Исходный код на GitHub</a></footer>
       </section>
     </main>
   )

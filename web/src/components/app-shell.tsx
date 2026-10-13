@@ -36,6 +36,7 @@ export function AppShell() {
   const [current, setCurrent] = React.useState<Member | null>(null)
   const [view, setView] = React.useState<ViewKey>("personal")
   const [bootLoading, setBootLoading] = React.useState(true)
+  const [projectName, setProjectName] = React.useState("")
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
@@ -45,10 +46,11 @@ export function AppShell() {
     let cancelled = false
     ;(async () => {
       try {
-        const data = await api<{ user: Member | null; members: Member[] }>("/api/me")
+        const data = await api<{ user: Member | null; members: Member[]; project: { name: string } | null }>("/api/me")
         if (cancelled) return
         setMembers(data.members)
         setCurrent(data.user)
+        setProjectName(data.project?.name || "Мой проект")
       } catch (e) {
         console.error(e)
       } finally {
@@ -105,6 +107,7 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        {current && <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-semibold">{projectName}</h1>{current.role === "admin" && <a href="/account" className="text-sm text-primary hover:underline">Пригласить участника →</a>}</div>}
         {bootLoading ? (
           <BootSkeleton />
         ) : !current ? (
@@ -179,9 +182,9 @@ function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <Github className="h-3.5 w-3.5" /> v1.0 · P0
-          </span>
+          <a href="https://github.com/megamen32/contribution-ledger" className="inline-flex items-center gap-1 hover:underline">
+            <Github className="h-3.5 w-3.5" /> Исходный код на GitHub
+          </a>
           <span className="hidden sm:inline">·</span>
           <span className="hidden sm:inline">Доля в учтённом вкладе, не в компании</span>
         </div>

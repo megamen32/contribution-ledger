@@ -7,6 +7,7 @@ export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
   const profiles = await db.modelProfile.findMany({
+    where: { workspaceId: user.workspaceId },
     orderBy: [{ active: "desc" }, { createdAt: "desc" }],
   })
   return NextResponse.json({

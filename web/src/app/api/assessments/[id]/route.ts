@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
   const round = await db.assessmentRound.findUnique({
-    where: { id },
+    where: { id, task: { ownerId: user.id } },
     include: {
       task: { select: { id: true, title: true, category: true } },
       report: { select: { id: true, version: true } },

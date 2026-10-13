@@ -9,7 +9,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!user) return NextResponse.json({ error: "not authenticated" }, { status: 401 })
 
   const report = await db.reportVersion.findUnique({ where: { id }, include: { task: true } })
-  if (!report) return NextResponse.json({ error: "not found" }, { status: 404 })
+  if (!report || report.task.ownerId !== user.id) return NextResponse.json({ error: "not found" }, { status: 404 })
   if (report.status === "approved") {
     return NextResponse.json({ report, alreadyApproved: true })
   }

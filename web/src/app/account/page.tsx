@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic"
 export default async function Account() {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
-  return <AccountSettings admin={user.role === "admin"} />
+  return <AccountSettings admin={user.role === "admin"} projectName={user.project?.name || "Мой проект"} />
 }

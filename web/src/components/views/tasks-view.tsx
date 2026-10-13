@@ -1308,7 +1308,7 @@ function RoundCard({
     reviewReasons: [],
     perModel: [],
     validCount: 0,
-    totalCount: 9,
+    totalCount: 6,
     financialEffectMinor: 0,
     ...parseJson<Partial<Aggregate>>(round.aggregateJson, {}),
   }
@@ -1482,7 +1482,7 @@ function RoundCard({
             className="h-7"
             onClick={toggleExpand}
           >
-            {expanded ? "Скрыть судей" : "9 ответов судей"}
+            {expanded ? "Скрыть судей" : `${round._count.judgeRuns} ответов судей`}
           </Button>
         </div>
       </div>

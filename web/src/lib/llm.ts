@@ -41,21 +41,30 @@ ${rc}
 ${evidence}
 - Ограничения пакета: ${packet.limitations.join("; ")}
 
-Ответ строго в формате JSON (schema_version "2.0", packet_id из пакета):
+Ответ — один JSON-объект. Выбери одно значение для каждого поля:
+- assessment: assessable или needs_information.
+- category: dev, research, design, ops, learning, sales или org.
+- grade: junior, middle, senior, expert или unknown.
+- complexity: целое число от 1 до 5 или null.
+- typical_duration: целые секунды low_seconds/high_seconds или null.
+- price_status: rate_available или no_price_data. Без ставки rate_id обязательно null.
+- При needs_information typical_duration обязательно null, price_status=no_price_data, missing_information должен перечислять, чего не хватает.
+- В evidence_ids только существующие ID. Поля limitations/missing_information — массивы непустых строк; если замечаний нет, [].
+Пример структуры (замени значения своей оценкой, не добавляй полей):
 {
   "schema_version": "2.0",
   "packet_id": "${packet.packet_id}",
-  "assessment": "assessable" | "needs_information",
-  "category": "dev|research|design|ops|learning|sales|org",
-  "grade": "junior|middle|senior|expert|unknown",
-  "complexity": 1..5 | null,
-  "typical_duration": { "low_seconds": N, "high_seconds": N } | null,
-  "price_status": "rate_available" | "no_price_data",
-  "rate_id": "id из справочника" | null,
-  "evidence_ids": ["e001", ...],
-  "limitations": ["..."],
-  "missing_information": ["..."],
-  "rationale": "короткое обоснование (1-2 предложения)"
+  "assessment": "assessable",
+  "category": "dev",
+  "grade": "middle",
+  "complexity": 2,
+  "typical_duration": { "low_seconds": 1800, "high_seconds": 3600 },
+  "price_status": "no_price_data",
+  "rate_id": null,
+  "evidence_ids": ["${packet.evidence[0]?.evidence_id ?? "e001"}"],
+  "limitations": [],
+  "missing_information": [],
+  "rationale": "Короткое обоснование (1–2 предложения)."
 }`
 }
 
@@ -119,10 +128,10 @@ export async function runJudgeSlot(
   const parsed = extractJson(raw)
 
   const parsedResult = JudgeAnswerSchema.safeParse(parsed)
-  if (!parsedResult.success) throw new Error("Invalid judge JSON")
+  if (!parsedResult.success) throw Object.assign(new Error("Некорректный JSON оценки"), { judgeReceipt: { raw, metadata: completion, validationErrors: parsedResult.error.issues } })
   const answer = parsedResult.data
   const errors = validateAnswer(packet, answer)
-  if (errors.length) throw new Error(errors.join("; "))
+  if (errors.length) throw Object.assign(new Error(errors.join("; ")), { judgeReceipt: { raw, metadata: completion, validationErrors: errors } })
   const parseError = null
 
   // derive prices from the validated answer

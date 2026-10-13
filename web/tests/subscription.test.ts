@@ -28,3 +28,17 @@ test("demo starts populated, reset returns fresh independent examples, personal 
  entries[0].amountMinor=1;expect(demoEntries()[0].amountMinor).toBe(900000)
  const tasks=demoTasks();tasks[0].done=false;expect(demoTasks()[0].done).toBe(true)
 })
+
+test("invalid model answer retains raw response and provider receipt without fabricating an assessment",async()=>{
+ const previous=globalThis.fetch,oldMode=process.env.VKLAD_LLM_MODE,oldKey=process.env.VKLAD_MINIMAX_KEY_FILE
+ const temp=mkdtempSync(join(tmpdir(),"vklad-invalid-slot-")),file=join(temp,"test.key");writeFileSync(file,"synthetic-key",{mode:0o600});process.env.VKLAD_LLM_MODE="subscription";process.env.VKLAD_MINIMAX_KEY_FILE=file
+ globalThis.fetch=(async()=>Response.json({model:SUBSCRIPTION_MODELS[1],id:"invalid-answer-receipt",content:[{type:"text",text:'{"unsupported":true}'}],stop_reason:"end_turn"})) as unknown as typeof fetch
+ try {
+  const {runJudgeSlot}=await import("../src/lib/llm")
+  let caught:any
+  try{await runJudgeSlot(SUBSCRIPTION_MODELS[1],1,{packet_id:"synthetic-packet",rate_card_id:"synthetic-rates",goal:"Synthetic work",constraints:[],available_tools:[],outcome:"Synthetic result",result_status:"unknown",evidence:[{evidence_id:"e001",kind:"participant_statement",text:"Synthetic evidence"}],limitations:[]} as any,[])}catch(e){caught=e}
+  expect(caught?.judgeReceipt.raw).toBe('{"unsupported":true}')
+  expect(caught?.judgeReceipt.metadata.providerResponseId).toBe("invalid-answer-receipt")
+  expect(caught?.judgeReceipt.validationErrors.length).toBeGreaterThan(0)
+ }finally{globalThis.fetch=previous;if(oldMode===undefined)delete process.env.VKLAD_LLM_MODE;else process.env.VKLAD_LLM_MODE=oldMode;if(oldKey===undefined)delete process.env.VKLAD_MINIMAX_KEY_FILE;else process.env.VKLAD_MINIMAX_KEY_FILE=oldKey;rmSync(temp,{recursive:true})}
+})

@@ -161,7 +161,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         })
         await db.judgeRun.update({
           where: { id: slot.id },
-          data: { status: "done", responseJson: respJson, error: result.parseError ?? "" },
+          data: { status: "done", responseJson: respJson, usageJson: JSON.stringify(result.metadata.usage), error: result.parseError ?? "" },
         })
         responses.push({
           modelKey,
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       } catch (e: any) {
         await db.judgeRun.update({
           where: { id: slot.id },
-          data: { status: "failed", error: String(e?.message ?? e).slice(0, 500) },
+          data: { status: "failed", error: String(e?.message ?? e).slice(0, 500), responseJson: JSON.stringify(e.judgeReceipt ?? {}) },
         })
       }
     }
@@ -198,6 +198,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     where: { id: round.id },
     data: { status, aggregateJson: JSON.stringify(agg) },
   })
+  await db.task.updateMany({ where: { id: task.id, status: "assessing", activeAssessmentId: round.id }, data: { status: task.status === "assessing" ? "in_progress" : task.status } })
 
   // record a job for traceability
   await db.job.create({

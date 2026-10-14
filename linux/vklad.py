@@ -55,7 +55,6 @@ class Client:
         files.connect("clicked", self.open_files)
         bar.pack_end(files, False, False, 0)
         self.report_button=Gtk.Button(label="Сводка и оценка")
-        self.report_button.set_sensitive(False)
         self.report_button.connect("clicked",self.open_report)
         bar.pack_end(self.report_button,False,False,0)
         box.pack_start(bar, False, False, 0)
@@ -85,6 +84,21 @@ class Client:
 
     def open_report(self,*unused):
         try:
+            if self.process:raise ValueError('Сначала остановите запись')
+            if self.session is None:
+                self.recording_picker=Gtk.FileChooserDialog(title='Открыть сохранённую запись',transient_for=self.window,action=Gtk.FileChooserAction.SELECT_FOLDER)
+                self.recording_picker.add_buttons('Отмена',Gtk.ResponseType.CANCEL,'Открыть',Gtk.ResponseType.OK)
+                self.recordings.mkdir(parents=True,exist_ok=True)
+                self.recording_picker.set_current_folder(str(self.recordings))
+                response=self.recording_picker.run()
+                chosen=self.recording_picker.get_filename()
+                self.recording_picker.destroy();self.recording_picker=None
+                if response!=Gtk.ResponseType.OK:return
+                from capture_report import capture_input
+                candidate=Path(chosen).resolve()
+                capture_input(candidate)
+                self.session=candidate
+                self.frames=json.loads((candidate/'session.json').read_text())['frames']
             from report_dialog import ReportDialog
             self.report_dialog=ReportDialog(self)
         except Exception as error:self.status.set_text(str(error))

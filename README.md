@@ -30,10 +30,10 @@
 
 ## Скачать для Ubuntu
 
-[Загрузить Вклад 0.3.1 для Ubuntu 22.04 / amd64](https://vklad.bezrabotnyi.com/downloads/Vklad-Ubuntu-amd64-v0.3.1.deb)
+[Загрузить Вклад 0.3.1 для Ubuntu 22.04 / amd64](https://vklad.bezrabotnyi.com/downloads/Vklad-Ubuntu-amd64-v0.3.2.deb)
 
 ```sh
-sudo apt install ./Vklad-Ubuntu-amd64-v0.3.1.deb
+sudo apt install ./Vklad-Ubuntu-amd64-v0.3.2.deb
 ```
 
 Клиент с иконкой и встроенным Screenpipe. Запуск, настоящий захват кадра и остановка проверяются автоматически на отдельном рабочем столе Ubuntu. Запись этой версии рассчитана на X11; [подробности и команда автопроверки](linux/README.md).

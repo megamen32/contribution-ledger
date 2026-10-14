@@ -33,9 +33,11 @@ jobs:
       - name: Package actual client and icon
         run: |
           SCREENPIPE_LINUX_BINARY="$PWD/.tmp/ubuntu-client/target/release/screenpipe-vklad" SCREENPIPE_LICENSE="$PWD/.tmp/ubuntu-client/screenpipe-737416b73938fb4d1857cd019363ecf5707a8653/LICENSE.md" bash linux/build-deb.sh
-          dpkg-deb --extract dist/linux/Vklad-Ubuntu-amd64-v0.3.1.deb .tmp/installed-client
+          dpkg-deb --extract dist/linux/Vklad-Ubuntu-amd64-v0.3.2.deb .tmp/installed-client
       - name: Real private desktop Start, capture, Stop
         run: sudo systemd-run --scope -p MemoryHigh=2G -p MemoryMax=2G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=128 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/smoke.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-acceptance"
+      - name: Two live sites and native article editor
+        run: sudo systemd-run --scope -p MemoryHigh=3G -p MemoryMax=3G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=192 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/journey.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-journey"
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
@@ -45,3 +47,6 @@ jobs:
             dist/linux/SHA256SUMS
             .tmp/native-acceptance/result.json
             .tmp/native-acceptance/*.png
+            .tmp/native-journey/journey-result.json
+            .tmp/native-journey/*.png
+            .tmp/native-journey/article.md

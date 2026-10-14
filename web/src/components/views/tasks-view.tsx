@@ -1112,8 +1112,8 @@ function ReportsTab({
           {task.reportVersions.map((r) => {
             const c = parseJson<{
               goal?: string
-              result?: string
-              actions?: string[]
+              result?: string | { text: string }
+              actions?: (string | { text: string })[]
             }>(r.contentJson, {})
             return (
               <li
@@ -1147,14 +1147,14 @@ function ReportsTab({
                 )}
                 {c.result && (
                   <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                    {c.result}
+                    {typeof c.result === "string" ? c.result : c.result.text}
                   </p>
                 )}
                 {c.actions && c.actions.length > 0 && (
                   <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
                     {c.actions.slice(0, 4).map((a, i) => (
                       <li key={i} className="line-clamp-1">
-                        {a}
+                        {typeof a === "string" ? a : a.text}
                       </li>
                     ))}
                   </ul>

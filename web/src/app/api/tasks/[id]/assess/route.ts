@@ -185,7 +185,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       } catch (e: any) {
         await db.judgeRun.update({
           where: { id: slot.id },
-          data: { status: "failed", error: String(e?.message ?? e).slice(0, 500), responseJson: JSON.stringify(e.judgeReceipt ?? {}) },
+          data: { status: "failed", error: String(e?.message ?? e).slice(0, 500), responseJson: JSON.stringify(e.judgeReceipt ?? (e.completionReceipt ? {metadata:e.completionReceipt} : {})) },
         })
       }
     }

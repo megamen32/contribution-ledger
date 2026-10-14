@@ -12,7 +12,9 @@ export async function subscriptionComplete(model: string, messages: { role: stri
   if (!key) throw new Error(`Подписка ${provider} не настроена`)
   const base = glm ? "https://api.z.ai/api/anthropic" : "https://api.minimax.io/anthropic"
   const requestId = crypto.randomUUID()
-  const response = await fetch(`${base}/v1/messages`, {
+  const pending={requestedModel:model,requestId,provider,providerResponseId:null,usage:null}
+  let response:Response
+  try { response = await fetch(`${base}/v1/messages`, {
     method: "POST", cache: "no-store", signal: AbortSignal.timeout(45000),
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "X-Request-Id": requestId },
     body: JSON.stringify({ model, max_tokens: 3000,
@@ -21,11 +23,13 @@ export async function subscriptionComplete(model: string, messages: { role: stri
       ...(glm ? {} : { output_config: { effort: "low" } }),
     }),
   })
-  if (!response.ok) throw new Error(`Подписка ${provider}: HTTP ${response.status}`)
+  } catch(error:any) { throw Object.assign(error,{completionReceipt:pending}) }
+  if (!response.ok) throw Object.assign(new Error(`Подписка ${provider}: HTTP ${response.status}`),{completionReceipt:{...pending,httpStatus:response.status}})
   const result = await response.json()
-  if (result.model !== model) throw new Error(`Запрошена ${model}, вернулась ${String(result.model)}. Оценка не засчитана.`)
+  const receipt={...pending,returnedModel:result.model,providerResponseId:result.id??null,usage:result.usage??null}
+  if (result.model !== model) throw Object.assign(new Error(`Запрошена ${model}, вернулась ${String(result.model)}. Оценка не засчитана.`),{completionReceipt:receipt})
   const content = (result.content ?? []).filter((b: any) => b.type === "text" && typeof b.text === "string").map((b: any) => b.text).join("\n")
-  if (!content.trim()) throw new Error(`Подписка ${provider}: пустой ответ`)
-  if (result.stop_reason === "max_tokens") throw new Error(`Подписка ${provider}: ответ не завершён`)
+  if (!content.trim()) throw Object.assign(new Error(`Подписка ${provider}: пустой ответ`),{completionReceipt:receipt})
+  if (result.stop_reason === "max_tokens") throw Object.assign(new Error(`Подписка ${provider}: ответ не завершён`),{completionReceipt:receipt})
   return { content, requestedModel: model, returnedModel: result.model as string, requestId, provider, providerResponseId: result.id ?? null, usage: result.usage ?? null }
 }

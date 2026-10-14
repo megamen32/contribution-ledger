@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { subscriptionComplete, subscriptionEnabled, SUBSCRIPTION_MODELS } from "./subscription"
 
 export const JUDGE_MODELS = subscriptionEnabled() ? SUBSCRIPTION_MODELS : ["glm-5.3", "gpt-6"]
-export const SUMMARY_MODEL = "minimax/MiniMax-M3"
+export const SUMMARY_MODEL = subscriptionEnabled() ? SUBSCRIPTION_MODELS[1] : "minimax/MiniMax-M3"
 
 export function routerConfig() {
   const base = (process.env.OMNIROUTE_BASE_URL || "http://127.0.0.1:20128/v1").replace(/\/$/, "")

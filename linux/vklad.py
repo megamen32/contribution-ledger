@@ -16,7 +16,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("WebKit2", "4.0")
 from gi.repository import Gtk, GLib, Gdk, WebKit2
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 ROOT = Path(__file__).resolve().parent
 
 class Client:
@@ -35,6 +35,7 @@ class Client:
         self.started_at = time.monotonic()
         self.stopped_at = None
         self.marker = "VKLAD REAL DESKTOP CAPTURE 314159"
+        self.api_callbacks = {}
         self.window = Gtk.Window(title="Вклад")
         self.window.set_default_size(1200, 820)
         self.window.set_wmclass("vklad", "Vklad")
@@ -53,12 +54,19 @@ class Client:
         files = Gtk.Button(label="Записи")
         files.connect("clicked", self.open_files)
         bar.pack_end(files, False, False, 0)
+        self.report_button=Gtk.Button(label="Сводка и оценка")
+        self.report_button.set_sensitive(False)
+        self.report_button.connect("clicked",self.open_report)
+        bar.pack_end(self.report_button,False,False,0)
         box.pack_start(bar, False, False, 0)
         # A persistent WebKit profile keeps the user's login across launches.
         profile = Path(os.environ.get("XDG_CONFIG_HOME", Path.home()/".config"))/"vklad/webkit"
         profile.mkdir(parents=True, exist_ok=True)
         manager = WebKit2.WebsiteDataManager(base_data_directory=str(profile), base_cache_directory=str(profile/"cache"))
-        self.web = WebKit2.WebView(web_context=WebKit2.WebContext.new_with_website_data_manager(manager))
+        scripts=WebKit2.UserContentManager()
+        scripts.register_script_message_handler("vklad")
+        scripts.connect("script-message-received::vklad",self.api_message)
+        self.web = WebKit2.WebView(web_context=WebKit2.WebContext.new_with_website_data_manager(manager),user_content_manager=scripts)
         self.web.get_settings().set_enable_webgl(False)
         self.web.get_settings().set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
         self.web.connect("load-changed", self.load_changed)
@@ -69,8 +77,38 @@ class Client:
         self.window.show_all()
         if args.smoke:
             GLib.timeout_add(250, self.smoke_tick)
+        if args.journey:
+            from journey import Journey
+            self.journey=Journey(self,args.journey)
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, self.close)
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.close)
+
+    def open_report(self,*unused):
+        try:
+            from report_dialog import ReportDialog
+            self.report_dialog=ReportDialog(self)
+        except Exception as error:self.status.set_text(str(error))
+
+    def api_message(self,manager,result):
+        try:
+            message=json.loads(result.get_js_value().to_string())
+            callback=self.api_callbacks.pop(message['id'],None)
+            if callback:callback(message.get('data'),message.get('error'))
+        except (ValueError,KeyError):pass
+
+    def api(self,path,body,callback,project=None,form=False):
+        if urlsplit(self.web.get_uri() or '').netloc!=urlsplit(self.args.server).netloc:
+            callback(None,'Откройте кабинет Вклад');return
+        request_id=str(uuid.uuid4());self.api_callbacks[request_id]=callback
+        options={'method':'GET' if body is None else 'POST','headers':{'Content-Type':'application/json'}}
+        if project:options['headers']['x-vklad-project']=project
+        if body is not None:
+            if form:
+                from urllib.parse import urlencode
+                options['body']=urlencode(body);options['headers']['Content-Type']='application/x-www-form-urlencoded'
+            else:options['body']=json.dumps(body,ensure_ascii=False)
+        script=f"""(async()=>{{try{{const r=await fetch({json.dumps(path)},{json.dumps(options)});const data=await r.json();window.webkit.messageHandlers.vklad.postMessage(JSON.stringify({{id:{json.dumps(request_id)},data:r.ok?data:null,error:r.ok?null:(data.error||'Ошибка кабинета')}}));}}catch(e){{window.webkit.messageHandlers.vklad.postMessage(JSON.stringify({{id:{json.dumps(request_id)},error:'Соединение потеряно. Проверьте задачу; запрос не повторяется автоматически.'}}));}}}})();"""
+        self.web.run_javascript(script,None,None,None)
 
     def policy(self, web, decision, kind):
         if kind == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
@@ -108,9 +146,10 @@ class Client:
             self.session = self.recordings / str(uuid.uuid4())
             self.recordings.mkdir(parents=True, exist_ok=True)
             self.frames = 0
+            self.report_button.set_sensitive(False)
             self.error = None
             self.stopping = False
-            command = [str(self.helper), "record", "--data-dir", str(self.session), "--parent-pid", str(os.getpid()), "--interval", "2" if self.args.smoke else "30"]
+            command = [str(self.helper), "record", "--data-dir", str(self.session), "--parent-pid", str(os.getpid()), "--interval", "2" if self.args.smoke or self.args.journey else "30"]
             self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
             self.button.set_label("Остановить")
             self.status.set_text("Запускается Screenpipe…")
@@ -127,8 +166,8 @@ class Client:
             GLib.idle_add(self.event, event)
 
     def event(self, event):
-        if self.args.smoke:
-            with (Path(self.args.smoke)/"client-events.jsonl").open("a") as f:f.write(json.dumps(event)+"\n")
+        if self.args.smoke or self.args.journey:
+            with (Path(self.args.smoke or self.args.journey)/"client-events.jsonl").open("a") as f:f.write(json.dumps(event)+"\n")
         if event.get("event")=="ready":
             self.status.set_text("Идёт запись · ожидается первый кадр")
         elif event.get("event")=="skipped_private_window":
@@ -178,6 +217,7 @@ class Client:
         self.button.set_sensitive(True)
         self.button.set_label("Начать запись")
         self.status.set_text(self.error or f"Запись сохранена · {self.frames} кадров")
+        self.report_button.set_sensitive(not self.error and self.frames>0)
         if self.closing: Gtk.main_quit()
         return False
 
@@ -241,18 +281,19 @@ def main():
     parser.add_argument("--server",default="https://vklad.bezrabotnyi.com/")
     parser.add_argument("--helper")
     parser.add_argument("--data-dir")
+    parser.add_argument("--journey",help="Run the isolated multi-application acceptance")
     parser.add_argument("--smoke",help="Run actual native Start/Stop acceptance on an isolated desktop")
     parser.add_argument("--version",action="version",version=VERSION)
     args=parser.parse_args()
     url=urlsplit(args.server)
     if url.scheme not in ("http","https") or not url.hostname or url.username or url.password or url.query or url.fragment:
         parser.error("Укажите адрес HTTPS-кабинета или локального тестового сервера")
-    if args.smoke and os.environ.get("VKLAD_ISOLATED_DESKTOP")!="1":
+    if (args.smoke or args.journey) and os.environ.get("VKLAD_ISOLATED_DESKTOP")!="1":
         parser.error("Smoke requires its own isolated desktop; use linux/smoke.sh")
     Client(args)
     Gtk.main()
-    if args.smoke:
-        result=Path(args.smoke)/"result.json"
+    if args.smoke or args.journey:
+        result=Path(args.smoke or args.journey)/("result.json" if args.smoke else "journey-result.json")
         return 0 if result.exists() and json.loads(result.read_text()).get("passed") else 1
     return 0
 

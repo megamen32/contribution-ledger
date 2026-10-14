@@ -5,6 +5,11 @@ on:
   pull_request:
     paths: ['linux/**', 'assets/**', '.github/workflows/native-ubuntu.yml']
   workflow_dispatch:
+    inputs:
+      live_assessment:
+        description: 'После записи выполнить сводку и 6 оценок по подпискам (до 7 вызовов)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -37,7 +42,22 @@ jobs:
       - name: Real private desktop Start, capture, Stop
         run: sudo systemd-run --scope -p MemoryHigh=2G -p MemoryMax=2G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=128 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/smoke.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-acceptance"
       - name: Two live sites and native article editor
-        run: sudo systemd-run --scope -p MemoryHigh=3G -p MemoryMax=3G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=192 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/journey.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-journey"
+        env:
+          LIVE_ASSESSMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.live_assessment }}
+          VKLAD_ACCEPTANCE_ACCOUNT: ${{ secrets.VKLAD_ACCEPTANCE_ACCOUNT }}
+        run: |
+          config=""
+          if [ "$LIVE_ASSESSMENT" = true ]; then
+            python3 - <<'PY'
+          import os,json
+          from pathlib import Path
+          value=json.loads(os.environ['VKLAD_ACCEPTANCE_ACCOUNT'])
+          assert set(value)=={'login','password'}
+          path=Path('.tmp/native-account.json');path.write_text(json.dumps(value));path.chmod(0o600)
+          PY
+            config="$PWD/.tmp/native-account.json"
+          fi
+          sudo systemd-run --scope -p MemoryHigh=3G -p MemoryMax=3G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=192 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" VKLAD_JOURNEY_CONFIG="$config" bash linux/journey.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-journey"
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:

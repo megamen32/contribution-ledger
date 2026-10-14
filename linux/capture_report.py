@@ -9,7 +9,7 @@ def capture_input(session,pixel_text=False):
     selected=[]
     for line in (session/'events.jsonl').read_text().splitlines():
         event=json.loads(line);text=(event.get('text') or '').strip()
-        if not text:continue
+        if not text and not pixel_text:continue
         if not Path(event['snapshot_path']).resolve().is_relative_to(session): raise ValueError('Кадр вне этой записи')
         key=(event.get('app_name'),event.get('window_name'),text)
         if selected and selected[-1][0]==key:continue
@@ -19,6 +19,7 @@ def capture_input(session,pixel_text=False):
     for key,event in selected:groups[(key[0],key[1])]=(key,event)
     selected=list(groups.values())
     if len(selected)>8:selected=[selected[round(i*(len(selected)-1)/7)] for i in range(8)]
+    if not selected:raise ValueError('В записи нет кадров для сводки')
     excerpts=[];remaining=18000
     per_frame=max(400,min(3000,18000//len(selected)))
     for _,event in selected:

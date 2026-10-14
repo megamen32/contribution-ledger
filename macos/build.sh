@@ -31,6 +31,7 @@ xcrun swiftc -swift-version 5 -parse-as-library -O -target arm64-apple-macos13.0
     -framework AppKit -framework WebKit -framework UniformTypeIdentifiers -framework CoreGraphics \
     macos/Vklad.swift macos/ScreenpipeController.swift -o "$APP/Contents/MacOS/Vklad"
 cp macos/Info.plist "$APP/Contents/Info.plist"
+cp assets/Vklad.icns "$APP/Contents/Resources/Vklad.icns"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 plutil -lint "$APP/Contents/Info.plist"
 for binary in "$APP/Contents/MacOS/Vklad" "$APP/Contents/MacOS/screenpipe-vklad"; do lipo "$binary" -verify_arch arm64; done

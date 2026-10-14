@@ -37,9 +37,16 @@ def dom_ready():
 GLib.timeout_add(500,dom_ready)
 web.connect('load-changed',load_changed);web.connect('load-failed',failed)
 def action(*unused):
-    global editor
+    global editor,web
     state['stage']+=1;state['ready']=False
     if state['stage'] in (1,2):
+        if state['stage']==2:
+            web.stop_loading();box.remove(web)
+            # Open the second site in a fresh view/context; video subresources of
+            # the first site must not hold a cross-site navigation indefinitely.
+            web=WebKit2.WebView(web_context=WebKit2.WebContext.new_ephemeral())
+            web.get_settings().set_enable_webgl(False);web.get_settings().set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
+            web.connect('load-changed',load_changed);web.connect('load-failed',failed);box.pack_start(web,True,True,0)
         browser.show_all();browser.present();address.set_text(urls[state['stage']-1]);web.load_uri(urls[state['stage']-1])
     elif state['stage']==3:
         browser.hide()

@@ -16,7 +16,9 @@ def capture_input(session,pixel_text=False):
         selected.append((key,event))
     # Keep the last visible text in each app/window instead of many duplicate revisions.
     groups={}
-    for key,event in selected:groups[(key[0],key[1])]=(key,event)
+    for key,event in selected:
+        group=(key[0],key[1])
+        if group not in groups or len(event.get('text') or '')>len(groups[group][1].get('text') or '') or 'editor' in (event.get('window_name') or '').lower():groups[group]=(key,event)
     selected=list(groups.values())
     if len(selected)>8:selected=[selected[round(i*(len(selected)-1)/7)] for i in range(8)]
     if not selected:raise ValueError('В записи нет кадров для сводки')

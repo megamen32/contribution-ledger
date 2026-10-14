@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
-import { CaptureInput, summarizeCapture } from "@/lib/capture-report"
+import { CAPTURE_SUMMARY_VERSION, CaptureInput, summarizeCapture } from "@/lib/capture-report"
 import { digest } from "@/lib/canonical"
 import { SUMMARY_MODEL } from "@/lib/omniroute"
 
@@ -15,7 +15,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{id:string}>}) {
   if (raw.length>60000) return NextResponse.json({error:"Слишком много текста"},{status:413})
   let input
   try {input=CaptureInput.parse(JSON.parse(raw))} catch {return NextResponse.json({error:"Проверьте выдержки записи: максимум24, общий текст до18000 символов"},{status:422})}
-  const businessKey=`capture:${user.workspaceId}:${task.id}:${digest({input,model:SUMMARY_MODEL,version:1})}`
+  const businessKey=`capture:${user.workspaceId}:${task.id}:${digest({input,model:SUMMARY_MODEL,version:CAPTURE_SUMMARY_VERSION})}`
   let job
   try {job=await db.job.create({data:{workspaceId:user.workspaceId,actorId:user.id,kind:"summarize",businessKey,state:"running",attempts:1,payloadJson:JSON.stringify({taskId:id,sessionId:input.sessionId})}})}
   catch (error:any) {

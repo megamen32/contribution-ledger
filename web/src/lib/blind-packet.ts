@@ -25,6 +25,7 @@ export function makeBlindPacket(
     visualReviewRequired?: boolean
   },
 ): BlindPacket {
+  const evidenceLabels=new Map(report.excerpts.map((e,i)=>[e.evidence_id,`e${String(i+1).padStart(3,"0")}`]))
   const packet: BlindPacket = {
     schema_version: "2.0",
     packet_id: opts.packetId,
@@ -32,7 +33,7 @@ export function makeBlindPacket(
     goal: report.goal,
     constraints: opts.constraints,
     available_tools: opts.availableTools,
-    outcome: report.result.text,
+    outcome: report.result.text.replace(/\[([A-Za-z0-9_.:-]+)\]/g,(label,id)=>evidenceLabels.has(id)?`[${evidenceLabels.get(id)}]`:label),
     result_status: report.result_status,
     evidence: report.excerpts.map((e, i) => ({
       // re-number to strip original IDs that might leak identity

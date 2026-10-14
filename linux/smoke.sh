@@ -10,6 +10,8 @@ EVIDENCE=$(realpath "$EVIDENCE")
 export VKLAD_ISOLATED_DESKTOP=1
 export XDG_CONFIG_HOME="$EVIDENCE/config"
 export XDG_CACHE_HOME="$EVIDENCE/cache"
+export XDG_DATA_HOME="$EVIDENCE/desktop-data"
+mkdir -p "$XDG_DATA_HOME"
 # Xvfb's -a and private cookie avoid other desktops; dbus-run-session owns this desktop bus.
 FIXTURE="$(cd "$(dirname "$0")" && pwd)/capture-fixture.py"
 timeout 600s xvfb-run -a -s '-screen 0 1280x900x24 -nolisten tcp' dbus-run-session -- bash -c '

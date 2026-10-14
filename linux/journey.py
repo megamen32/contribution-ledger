@@ -1,6 +1,7 @@
 """Real multi-application capture and optional subscription consumer canary."""
 import json,os,signal,time,sqlite3,subprocess
 from datetime import datetime
+import re
 from pathlib import Path
 from gi.repository import GLib
 class Journey:
@@ -66,7 +67,7 @@ class Journey:
                 if state.get('error'):raise ValueError(state['error'])
                 needle={4:'slicing pie',5:'co-founder',6:'стартап'}[self.stage]
                 latest=self.events()[-1:] or [{}]
-                if state.get('ready') and datetime.fromisoformat(latest[0].get('captured_at','1970-01-01T00:00:00+00:00').replace('Z','+00:00')).timestamp()>=state.get('ready_at',0) and time.monotonic()-self.wait_since>7 and needle in (latest[0].get('text') or '').lower():
+                if state.get('ready') and datetime.fromisoformat(re.sub(r'(\.\d{6})\d+',r'\1',latest[0].get('captured_at','1970-01-01T00:00:00+00:00')).replace('Z','+00:00')).timestamp()>=state.get('ready_at',0) and time.monotonic()-self.wait_since>7 and needle in (latest[0].get('text') or '').lower():
                     c.screenshot(self.out/f'captured-stage-{self.stage}.png')
                     if self.stage<6:self.signal();self.stage+=1
                     else:c.button.emit('clicked');self.stage=7

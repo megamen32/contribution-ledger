@@ -1,0 +1,68 @@
+{
+  "run": "https://github.com/megamen32/contribution-ledger/actions/runs/38572044054",
+  "tested_revision": "16c0df53e06d4038d765c7ea1fa1ead4898c6960",
+  "frames": 18,
+  "elapsed_seconds": 180.57,
+  "assessment": {
+    "collectionStatus": "complete",
+    "priceStatus": "unknown",
+    "costLow": null,
+    "costHigh": null,
+    "currency": null,
+    "hoursLow": 1,
+    "hoursHigh": 2.5,
+    "category": "research",
+    "needsReview": true,
+    "reviewReasons": [
+      "incomplete_price_information"
+    ],
+    "perModel": [
+      {
+        "modelKey": "glm-5.3-flash",
+        "hoursLow": 1,
+        "hoursHigh": 3,
+        "priceLow": null,
+        "priceHigh": null,
+        "category": "research",
+        "count": 3
+      },
+      {
+        "modelKey": "MiniMax-M3.1-Flash-Preview",
+        "hoursLow": 1,
+        "hoursHigh": 2,
+        "priceLow": null,
+        "priceHigh": null,
+        "category": "research",
+        "count": 3
+      }
+    ],
+    "validCount": 6,
+    "totalCount": 6,
+    "financialEffectMinor": 0
+  },
+  "summary_usage": {
+    "input_tokens": 1577,
+    "output_tokens": 594,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 188,
+    "output_tokens_details": {
+      "thinking_tokens": 36
+    }
+  },
+  "judge_usage": {
+    "glm-5.3-flash": {
+      "input": 6756,
+      "output": 3573,
+      "cached_input": 0,
+      "calls": 3
+    },
+    "MiniMax-M3.1-Flash-Preview": {
+      "input": 7608,
+      "output": 1349,
+      "cached_input": 504,
+      "calls": 3
+    }
+  },
+  "glm_api_list_estimate_usd": 0.0027999,
+  "subscription_charged_amount": null
+}

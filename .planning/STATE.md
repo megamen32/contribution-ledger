@@ -3,13 +3,13 @@
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Попробовать учёт вкладов до регистрации.
-**Current focus:** Заполненный демо-кабинет и реальные оценки по подпискам
+**Current focus:** Проверенный Ubuntu-клиент, автоматическая запись/сводка/оценка и иконки
 
 ## Current Position
 Phase: 1 of 1 (Открытое демо и публикация)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-10-13 — демо-кабинет и реальные ответы GLM/MiniMax проверены на публичном сайте.
+Last activity: 2026-10-14 — полный native canary прошёл: 18 кадров, статья, сводка, 6/6 оценок; пакет и иконки опубликованы.
 Progress: 100%
 
 ## Accumulated Context
@@ -21,7 +21,7 @@ Progress: 100%
 Нет.
 
 ## Session Continuity
-Last session: 2026-10-13
+Last session: 2026-10-14
 Stopped at: Consumer acceptance passed
 Resume file: None
 
@@ -38,3 +38,7 @@ Resume file: None
 | 261013-6xu | Русский README со скриншотами, описание и сайт в GitHub About | 2026-10-13 | Verified | quick/261013-6xu-russian-readme-with-public-demo-screensh/ |
 
 | 261013-720 | Заполненный демо-кабинет и реальные GLM/MiniMax по подпискам | 2026-10-13 | Verified (partial model results explicit) | quick/261013-720-seeded-demo-cabinet-and-real-subscriptio/ |
+
+| 261014-k9s | Ubuntu-клиент, иконки, два сайта/редактор и реальная сводка/оценка | 2026-10-14 | Verified | quick/261014-k9s-ubuntu-native-client-automatic-real-scre/ |
+
+Доказательство: docs/NATIVE-0.3.2.md; полный canary38572044054, код16c0df5. Mac screen capture не проверен, Ubuntu запись требует X11; это явные границы поставки.

@@ -20,7 +20,7 @@ def shot(name):
 def load_changed(w,event):
     if event==WebKit2.LoadEvent.FINISHED and w.get_uri()!='about:blank' and ((state['stage']==1 and 'Slicing Pie' in (w.get_title() or '')) or (state['stage']==2 and 'How to split' in (w.get_title() or ''))):
         browser.set_title('Research browser — '+str(w.get_title()))
-        state.update(ready=True,url=w.get_uri(),title=w.get_title());save();shot(f"site-{state['stage']}.png")
+        state.update(ready=True,ready_at=time.time(),url=w.get_uri(),title=w.get_title());save();shot(f"site-{state['stage']}.png")
 def failed(w,event,uri,error):
     if error.matches(WebKit2.network_error_quark(),WebKit2.NetworkError.CANCELLED):return True
     state.update(error=error.message);save();shot('workspace-failure.png');return False
@@ -30,7 +30,7 @@ def dom_ready():
             try:
                 if w.run_javascript_finish(result).get_js_value().to_boolean() and ((state['stage']==1 and 'Slicing Pie' in (w.get_title() or '')) or (state['stage']==2 and 'How to split' in (w.get_title() or ''))):
                     browser.set_title('Research browser — '+str(w.get_title()))
-                    state.update(ready=True,url=w.get_uri(),title=w.get_title());save();shot(f"site-{state['stage']}.png")
+                    state.update(ready=True,ready_at=time.time(),url=w.get_uri(),title=w.get_title());save();shot(f"site-{state['stage']}.png")
             except GLib.Error:pass
         web.run_javascript("Boolean(document.body && document.body.innerText.length>300 && document.querySelector('h1,h2'))",None,checked,None)
     return True
@@ -53,7 +53,7 @@ def action(*unused):
         editor=subprocess.Popen([sys.executable,str(Path(__file__).with_name('research-editor.py'))])
         def editor_ready():
             if (out/'editor-ready.json').exists():
-                state.update(ready=True,title='Research editor');save();return False
+                state.update(ready=True,ready_at=time.time(),title='Research editor');save();return False
             return True
         GLib.timeout_add(250,editor_ready)
     save();return True

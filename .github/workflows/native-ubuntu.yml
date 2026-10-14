@@ -50,3 +50,7 @@ jobs:
             .tmp/native-journey/journey-result.json
             .tmp/native-journey/*.png
             .tmp/native-journey/article.md
+            .tmp/native-journey/records/*/session.json
+            .tmp/native-journey/records/*/events.jsonl
+            .tmp/native-journey/records/*/db.sqlite
+            .tmp/native-journey/records/*/data/**/*.jpg

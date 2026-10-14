@@ -1,23 +1,20 @@
 """Native review → draft → explicit approval/assessment in authenticated WebKit."""
-import json
-from gi.repository import Gtk
+import json,threading
+from gi.repository import Gtk,GLib
 from capture_report import capture_input
 
 class ReportDialog:
     def __init__(self,client):
-        self.client=client;self.input=capture_input(client.session);self.project=None;self.draft=None
+        self.client=client;self.input=None;self.project=None;self.draft=None
         self.window=Gtk.Dialog(title='Сводка записи',transient_for=client.window,modal=True)
         self.window.set_default_size(900,700)
         box=self.window.get_content_area();box.set_spacing(8);box.set_border_width(12)
-        self.label=Gtk.Label(label='Просмотрите текст. Только эти выдержки отправятся модели; снимки останутся здесь.')
+        self.label=Gtk.Label(label='Распознаются сохранённые изображения. Снимки остаются на этом компьютере…')
         self.label.set_line_wrap(True);box.pack_start(self.label,False,False,0)
         self.tasks=Gtk.ComboBoxText();box.pack_start(self.tasks,False,False,0)
         self.stack=Gtk.Stack();scroll=Gtk.ScrolledWindow();scroll.add(self.stack);box.pack_start(scroll,True,True,0)
         review=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12);self.buffers=[]
-        for index,excerpt in enumerate(self.input['excerpts']):
-            title=Gtk.Label(label=f'Фрагмент {index+1}');title.set_xalign(0);review.pack_start(title,False,False,0)
-            entry=Gtk.TextView();entry.set_wrap_mode(Gtk.WrapMode.WORD_CHAR);entry.set_size_request(-1,150)
-            entry.get_buffer().set_text(excerpt['text']);self.buffers.append(entry.get_buffer());review.pack_start(entry,False,False,0)
+        self.review=review
         self.stack.add_named(review,'review')
         self.text=Gtk.TextView();self.text.set_wrap_mode(Gtk.WrapMode.WORD_CHAR);self.text.set_editable(False)
         self.stack.add_named(self.text,'summary');self.stack.set_visible_child_name('review')
@@ -27,7 +24,21 @@ class ReportDialog:
         self.approve.connect('clicked',self.assess);box.pack_start(self.approve,False,False,0)
         self.window.add_button('Закрыть',Gtk.ResponseType.CLOSE)
         self.window.connect('response',lambda *a:self.window.destroy());self.window.show_all()
-        client.api('/api/me',None,self.me_loaded)
+        def extract():
+            try:GLib.idle_add(self.extracted,capture_input(client.session,pixel_text=True),None)
+            except Exception as error:GLib.idle_add(self.extracted,None,str(error))
+        threading.Thread(target=extract,daemon=True).start()
+
+    def extracted(self,data,error):
+        if error:self.label.set_text(error);return False
+        self.input=data
+        for index,excerpt in enumerate(data['excerpts']):
+            title=Gtk.Label(label=f'Фрагмент {index+1}');title.set_xalign(0);self.review.pack_start(title,False,False,0)
+            entry=Gtk.TextView();entry.set_wrap_mode(Gtk.WrapMode.WORD_CHAR);entry.set_size_request(-1,150)
+            entry.get_buffer().set_text(excerpt['text']);self.buffers.append(entry.get_buffer());self.review.pack_start(entry,False,False,0)
+        self.review.show_all();self.label.set_text('Просмотрите текст. Только эти выдержки отправятся модели; снимки останутся здесь.')
+        self.client.api('/api/me',None,self.me_loaded)
+        return False
 
     def me_loaded(self,data,error):
         if error:self.label.set_text(error);return
@@ -72,4 +83,5 @@ class ReportDialog:
         (self.client.session/'assessment-receipt.json').write_text(json.dumps(data,ensure_ascii=False,indent=2))
         self.label.set_text(f"Оценка: {data['validCount']} из {data['totalCount']} ответов прошли проверку. Финансовый учёт не изменён. Подробности в задаче кабинета.")
         agg=data['aggregate']
-        self.text.get_buffer().set_text('Сводная оценка\n\n'+f"Категория: {agg.get('category') or 'не определена'}\nКвалификация: {agg.get('qualification') or 'не определена'}\nТипичные часы: {agg.get('hoursLow','?')}–{agg.get('hoursHigh','?')}\nЦена труда: {str(agg.get('costLow')/100)+'–'+str(agg.get('costHigh')/100)+' '+str(agg.get('currency')) if agg.get('priceStatus')=='known' else 'не определена'}.\n\nЭто рекомендация ИИ. Доли и финансовые записи не изменены.")
+        category={'research':'Исследование','dev':'Разработка','design':'Дизайн','ops':'Эксплуатация','learning':'Обучение','sales':'Продажи','org':'Организация'}.get(agg.get('category'),'Не определена')
+        self.text.get_buffer().set_text('Сводная оценка\n\n'+f"Категория: {category}\nКвалификация: {agg.get('qualification') or 'не определена'}\nТипичные часы: {agg.get('hoursLow','?')}–{agg.get('hoursHigh','?')}\nЦена труда: {str(agg.get('costLow')/100)+'–'+str(agg.get('costHigh')/100)+' '+str(agg.get('currency')) if agg.get('priceStatus')=='known' else 'не определена'}.\n\nЭто рекомендация ИИ. Доли и финансовые записи не изменены.")

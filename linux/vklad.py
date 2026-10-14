@@ -94,6 +94,7 @@ class Client:
                 chosen=self.recording_picker.get_filename()
                 self.recording_picker.destroy();self.recording_picker=None
                 if response!=Gtk.ResponseType.OK:return
+                if not chosen:raise ValueError('Выберите папку завершённой записи Screenpipe')
                 from capture_report import capture_input
                 candidate=Path(chosen).resolve()
                 capture_input(candidate)

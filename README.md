@@ -2,7 +2,7 @@
 
 Учёт труда и денежных вложений команды: видно, кто сколько вложил в проект по согласованным ставкам.
 
-**[Открыть сайт и попробовать демо](https://vklad.bezrabotnyi.com/)** · [Скачать для macOS](https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.0.dmg)
+**[Открыть сайт и попробовать демо](https://vklad.bezrabotnyi.com/)** · [Скачать для macOS](https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.1.dmg)
 
 - **Работа и деньги вместе.** Задачи, рабочие сессии и расходы складываются в общий вклад.
 - **Труд по согласованной ставке.** Учтённые часы переводятся в денежную сумму; вклад не определяет долю в компании.
@@ -28,14 +28,24 @@
 
 ![Демо Вклада: расчёт общего вклада команды](docs/screenshots/demo-team-ru.png)
 
+## Скачать для Ubuntu
+
+[Загрузить Вклад 0.3.1 для Ubuntu 22.04 / amd64](https://vklad.bezrabotnyi.com/downloads/Vklad-Ubuntu-amd64-v0.3.1.deb)
+
+```sh
+sudo apt install ./Vklad-Ubuntu-amd64-v0.3.1.deb
+```
+
+Клиент с иконкой и встроенным Screenpipe. Запуск, настоящий захват кадра и остановка проверяются автоматически на отдельном рабочем столе Ubuntu. Запись этой версии рассчитана на X11; [подробности и команда автопроверки](linux/README.md).
+
 ## Скачать для macOS
 
-[Загрузить Vklad 0.3.0 для Apple Silicon](https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.0.dmg) · [Все загрузки](https://vklad.bezrabotnyi.com/downloads/)
+[Загрузить Vklad 0.3.1 для Apple Silicon](https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.1.dmg) · [Все загрузки](https://vklad.bezrabotnyi.com/downloads/)
 
 Откройте образ и перетащите Vklad.app в «Программы». Скачать образ из терминала:
 
 ```sh
-curl -fLO https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.0.dmg
+curl -fLO https://vklad.bezrabotnyi.com/downloads/Vklad-macOS-arm64-v0.3.1.dmg
 ```
 
 Сборка предназначена для Apple Silicon и не нотарифицирована Apple. Запись экрана требует разрешения macOS и не запускается автоматически. [Возможности и ограничения Mac-клиента](docs/SCREENPIPE_0.3.0.md).

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Вклад
+Comment=Учёт труда и денежных вложений команды
+Exec=vklad
+Icon=vklad
+Terminal=false
+Categories=Office;ProjectManagement;
+StartupWMClass=Vklad

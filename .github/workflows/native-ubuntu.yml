@@ -1,0 +1,47 @@
+name: Ubuntu native client acceptance
+on:
+  push:
+    paths: ['linux/**', 'assets/**', '.github/workflows/native-ubuntu.yml']
+  pull_request:
+    paths: ['linux/**', 'assets/**', '.github/workflows/native-ubuntu.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-client:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libpipewire-0.3-dev libclang-dev libdbus-1-dev libssl-dev libx11-dev libxcb1-dev libxcb-randr0-dev libgbm-dev xvfb dbus-x11 tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
+      - name: Rust toolchain
+        run: rustup toolchain install 1.96.1 --profile minimal && rustup default 1.96.1
+      - uses: actions/cache@v6.1.0
+        with:
+          path: .tmp/ubuntu-client
+          key: ubuntu22-screenpipe-737416b-rust196-${{ hashFiles('linux/screenpipe-source.json') }}
+      - name: Build exact MIT Screenpipe
+        run: |
+          budget=$(python3 -c 'from pathlib import Path; a=int([l.split()[1] for l in Path("/proc/meminfo").read_text().splitlines() if l.startswith("MemAvailable:")][0])//1024; print(min(8192,a-1024))')
+          test "$budget" -ge 2048
+          sudo systemd-run --scope -p MemoryHigh="${budget}M" -p MemoryMax="${budget}M" -p MemorySwapMax=0 -p CPUQuota=400% -p TasksMax=256 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/build-screenpipe.sh
+      - name: Package actual client and icon
+        run: |
+          SCREENPIPE_LINUX_BINARY="$PWD/.tmp/ubuntu-client/target/release/screenpipe-vklad" SCREENPIPE_LICENSE="$PWD/.tmp/ubuntu-client/screenpipe-737416b73938fb4d1857cd019363ecf5707a8653/LICENSE.md" bash linux/build-deb.sh
+          dpkg-deb --extract dist/linux/Vklad-Ubuntu-amd64-v0.3.1.deb .tmp/installed-client
+      - name: Real private desktop Start, capture, Stop
+        run: sudo systemd-run --scope -p MemoryHigh=2G -p MemoryMax=2G -p MemorySwapMax=0 -p CPUQuota=200% -p TasksMax=128 -p IOWeight=50 runuser -u "$(id -un)" -- env PATH="$PATH" bash linux/smoke.sh "$PWD/.tmp/installed-client/usr/lib/vklad" "$PWD/.tmp/native-acceptance"
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: ubuntu-client-and-native-evidence
+          path: |
+            dist/linux/*.deb
+            dist/linux/SHA256SUMS
+            .tmp/native-acceptance/result.json
+            .tmp/native-acceptance/*.png

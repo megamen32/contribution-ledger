@@ -129,7 +129,7 @@ export default function Login() {
           <button type="button" className="text-primary hover:underline" onClick={() => { setRegister(!register); setError("") }}>
             {register ? "У меня уже есть аккаунт" : "Создать аккаунт"}
           </button>
-          <a href="/downloads/Vklad-macOS-arm64-v0.3.0.dmg" className="text-muted-foreground hover:text-foreground hover:underline">Скачать для macOS</a>
+          <a href="/downloads/Vklad-macOS-arm64-v0.3.1.dmg" className="text-muted-foreground hover:text-foreground hover:underline">Скачать для macOS</a>
         </div>
         {register && hasInvitationLink && <button className="mt-4 text-sm text-primary hover:underline" type="button" onClick={() => { clearInvitation(); setError("") }}>Создать свой проект вместо вступления</button>}</>}
         <footer className="mt-8 text-sm text-muted-foreground"><a href="https://github.com/megamen32/contribution-ledger" className="hover:underline">Исходный код на GitHub</a></footer>

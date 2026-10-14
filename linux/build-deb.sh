@@ -26,7 +26,7 @@ Package: vklad
 Version: 0.3.2
 Architecture: amd64
 Maintainer: Vklad <noreply@vklad.bezrabotnyi.com>
-Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.0, tesseract-ocr, tesseract-ocr-eng, tesseract-ocr-rus, libpipewire-0.3-0, libdbus-1-3, libx11-6, libxcb1, libxcb-randr0, libegl1, libgbm1, libwayland-client0, libwayland-server0, liblzma5
+Depends: at-spi2-core, python3, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.0, tesseract-ocr, tesseract-ocr-eng, tesseract-ocr-rus, libpipewire-0.3-0, libdbus-1-3, libx11-6, libxcb1, libxcb-randr0, libegl1, libgbm1, libwayland-client0, libwayland-server0, liblzma5
 Section: utils
 Priority: optional
 Homepage: https://vklad.bezrabotnyi.com/

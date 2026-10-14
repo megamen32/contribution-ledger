@@ -18,7 +18,7 @@ jobs:
       - name: Install native dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libpipewire-0.3-dev libclang-dev libdbus-1-dev libssl-dev libx11-dev libxcb1-dev libxcb-randr0-dev libwayland-dev libegl1-mesa-dev libgbm-dev xvfb dbus-x11 tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
+          sudo apt-get install -y --no-install-recommends python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libpipewire-0.3-dev libclang-dev libdbus-1-dev libssl-dev libx11-dev libxcb1-dev libxcb-randr0-dev libwayland-dev libegl1-mesa-dev libgbm-dev xvfb dbus-x11 at-spi2-core tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
       - name: Rust toolchain
         run: rustup toolchain install 1.96.1 --profile minimal && rustup default 1.96.1
       - uses: actions/cache@v6.1.0

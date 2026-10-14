@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ ${VKLAD_BOUNDED_BUILD:-0} != 1 ]]; then
+    exec python3 scripts/bounded-native.py --ram-mib 2048 --seconds 300 -- env VKLAD_BOUNDED_BUILD=1 bash macos/build.sh
+fi
 [[ "$(uname -s)" == Darwin && "$(uname -m)" == arm64 ]] || { echo 'Build on an Apple Silicon Mac.' >&2; exit 1; }
 ROOT="$PWD"
 OUT="$ROOT/dist/macos"
@@ -29,7 +32,7 @@ cp "$BUNDLE/screenpipe-vklad" "$APP/Contents/MacOS/screenpipe-vklad"
 cp "$BUNDLE/LICENSE.md" "$BUNDLE/THIRD_PARTY_NOTICES.txt" "$BUNDLE/VKLAD_FORK.md" "$BUNDLE/build.json" "$APP/Contents/Resources/Screenpipe/"
 cp -R "$BUNDLE/ThirdPartySource" "$APP/Contents/Resources/Screenpipe/"
 cp macos/screenpipe-source.json "$APP/Contents/Resources/Screenpipe/source.json"
-xcrun swiftc -swift-version 5 -parse-as-library -O -target arm64-apple-macos13.0 \
+xcrun swiftc -swift-version 5 -parse-as-library -O -num-threads 2 -target arm64-apple-macos13.0 \
     -framework AppKit -framework WebKit -framework UniformTypeIdentifiers -framework CoreGraphics \
     macos/Vklad.swift macos/ScreenpipeController.swift -o "$APP/Contents/MacOS/Vklad"
 cp macos/Info.plist "$APP/Contents/Info.plist"

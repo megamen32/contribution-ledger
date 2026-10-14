@@ -1,4 +1,4 @@
-# Вклад 0.3.0 — Mac Apple Silicon
+# Вклад 0.3.1 — Mac Apple Silicon
 
 Screenpipe входит в Vklad.app. Отдельная установка Screenpipe, Rust, Python,
 Ollama или моделей не требуется. Общий кабинет: https://vklad.bezrabotnyi.com
